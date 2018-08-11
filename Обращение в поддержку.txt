@@ -1,0 +1,535 @@
+IZennoTable tblWhatChanged = project.Tables["What_changed"];
+IZennoTable tblStandart = project.Tables["Standart"];
+IZennoTable tblBroukenListing = project.Tables["BroukenListing"];
+
+
+
+
+IZennoList lstInterim = project.Lists["Interim"];
+lstInterim.Clear();
+
+string strWhatChanged = "";
+string strCellResult = "";
+string strFormat = "";
+
+
+string strProfilePath = project.Directory + @"\Вспомогательные файлы\amazon_profile.zpprofile";
+
+int intRowCount = tblBroukenListing.RowCount/2;
+project.SendInfoToLog(intRowCount.ToString());
+
+while(tblBroukenListing.RowCount!=0){
+
+	List<string> listBroukenListing = tblBroukenListing.GetRow(0).ToList();
+	project.SendInfoToLog(listBroukenListing.Count.ToString());
+	
+	string[] arrParameters = tblBroukenListing.GetRow(1).ToArray();
+	string strAsinStandart = arrParameters[1];
+	string strTitleStandart = arrParameters[2];
+	string strBrandStandart = arrParameters[3];
+	//string strBulletStandart = arrParameters[4];
+	string strDescriptionStandart = arrParameters[5];
+	//string strCategoryStandart = arrParameters[6];
+	string strImgStandart = arrParameters[7];
+	//string strProductDimensionsStandart = arrParameters[8];
+	string strPackageDimensionsStandart = arrParameters[9];
+	//string strItemWeightStandart = arrParameters[10];
+	string strShippingWeightStandart = arrParameters[11];
+	string strOtherImageIssue = arrParameters[12];
+	string strAuthoritativeWebsite = arrParameters[13];
+	string strProofComment = arrParameters[14];
+	string strBulletStandartOne = arrParameters[15];
+	string strBulletStandartTwo = arrParameters[16];
+	string strBulletStandartThree = arrParameters[17];
+	string strBulletStandartFour = arrParameters[18];
+	string strBulletStandartFive = arrParameters[19];
+
+	project.SendInfoToLog(strAsinStandart);
+	project.SendInfoToLog(strTitleStandart);
+	project.SendInfoToLog(strBrandStandart);
+	//project.SendInfoToLog(strBulletStandart);
+	project.SendInfoToLog(strDescriptionStandart);
+	//project.SendInfoToLog(strCategoryStandart);
+	project.SendInfoToLog(strImgStandart);
+	//project.SendInfoToLog(strProductDimensionsStandart);
+	project.SendInfoToLog(strPackageDimensionsStandart);
+	//project.SendInfoToLog(strItemWeightStandart);
+	project.SendInfoToLog(strShippingWeightStandart);
+
+
+
+
+
+	Tab Tab1 = instance.ActiveTab;
+
+	if (File.Exists(strProfilePath)){
+		project.Profile.Load(strProfilePath);
+	}
+	else{
+		project.SendInfoToLog("Профиль не обнаружен.", true);
+		Tab1.Navigate("https://sellercentral.amazon.com/cu/contact-us");
+		Tab1.WaitDownloading();
+		Thread.Sleep(500);
+		project.SendInfoToLog("Необходима авторизация. Пауза три минуты.", true);
+		Thread.Sleep(180000);
+		project.Profile.Save(strProfilePath);
+	}
+
+	Tab1.Navigate("https://sellercentral.amazon.com/cu/contact-us");
+	Tab1.WaitDownloading();
+	Thread.Sleep(500);
+
+	//HtmlElement elSingIn = Tab1.FindElementByXPath("//button[@class='secondary']", 0);
+	HtmlElement elSingIn = Tab1.FindElementByXPath("//h1[@class='a-spacing-small' and contains(text(),'Sign in')]", 0);
+	if(!elSingIn.IsVoid){
+		project.SendInfoToLog("Необходима авторизация. Пауза три минуты.", true);
+		Thread.Sleep(180000);
+		project.Profile.Save(strProfilePath);
+	}
+
+	//выбираем нужную категорию
+	HtmlElement elRequestPage = Tab1.FindElementByXPath("//span[contains(text(),'Request product page or category change')]", 0);
+	elRequestPage.Click();
+	Tab1.WaitDownloading();
+	Thread.Sleep(500);
+
+
+	//закрываем всплывающее окно
+	HtmlElement elClose = Tab1.FindElementByXPath("//a[@id='spaui-close']", 0);
+	elClose.Click();
+	Tab1.WaitDownloading();
+	Thread.Sleep(500);
+
+	//выбираем раздел "Fix a product page"
+	HtmlElement elFixPage = Tab1.FindElementByXPath("//div[@class='a-box-inner']/div/label/span[@class='a-label a-radio-label']", 0);
+	if(elFixPage.IsVoid){
+		continue;
+	}
+	elFixPage.Click();
+	Tab1.WaitDownloading();
+	Thread.Sleep(500);
+
+	//берем асин из списка
+	strWhatChanged = listBroukenListing[0];
+	listBroukenListing.RemoveAt(0);
+	project.SendInfoToLog("Изменения в АСИНе: " + strWhatChanged, true);
+
+	//вставляем ASIN
+	HtmlElement elSearch = Tab1.FindElementByXPath("//input[@name='asinSearchTerm']", 0);
+	elSearch.SetValue(strWhatChanged, "Full");
+
+	HtmlElement elButtSearch = Tab1.FindElementByXPath("//button[@id='asinSearchButton-announce']", 0);
+	elButtSearch.Click();
+	Tab1.WaitDownloading();
+	Thread.Sleep(10000);
+
+	//узнием сколько строк в списке с измененными пунктами меню 
+	int intCount = listBroukenListing.Count;
+	//string strCount = Convert.ToString(listBroukenListing.Count);
+	string strCount = intCount.ToString();
+	project.SendInfoToLog(strCount);
+
+	for(int n=0; n<intCount; n++){
+		
+		HtmlElement elChoose = Tab1.FindElementByXPath("//span[@class='a-dropdown-prompt' and contains(text(),'Choose')]", 0);
+		for(int x=0; x<3; x++){
+			if(elChoose.IsVoid){
+				Thread.Sleep(5000);
+			}
+			else{
+				break;
+			}
+		}
+		//добавляем новый элемент меню
+		HtmlElement elAddAtribute = Tab1.FindElementByXPath("//div[@id='add_another_attribute']/a", 0);
+		elAddAtribute.Click();
+		Tab1.WaitDownloading();
+		Thread.Sleep(500);
+		project.SendInfoToLog("Добавляем новый элемент меню", true);
+		
+
+		//выбираем, что хотим изменить
+		elChoose = Tab1.FindElementByXPath("//span[@class='a-dropdown-prompt' and contains(text(),'Choose')]", 0);
+		for(int x=0; x<3; x++){
+			if(elChoose.IsVoid){
+				Thread.Sleep(5000);
+			}
+			else{
+				break;
+			}
+		}
+		elChoose.Click();
+		Tab1.WaitDownloading();
+		Thread.Sleep(2000);
+		project.SendInfoToLog("Выбираем, что хотим изменить", true);
+
+
+		//подзадачи
+		//берем строку из списка с измененными пунктами меню 
+		strWhatChanged = listBroukenListing[0];
+		listBroukenListing.RemoveAt(0);
+		project.SendInfoToLog(strWhatChanged);
+
+		//выбираем категорию
+		switch(strWhatChanged){
+			case "Title":
+				project.SendInfoToLog("Меняем Title", true);
+				//меняем Title
+				HtmlElement elTitleValue = Tab1.FindElementByXPath("//input[contains(@id,'edit_asin_title')]", 1);
+				HtmlElement elTitle = Tab1.FindElementByXPath("//a[contains(@id,'select_editable_field') and contains(text(),'Title')]", 0);
+				
+				for(int y=0; y<3; y++){
+				elTitle = Tab1.FindElementByXPath("//a[contains(@id,'select_editable_field') and contains(text(),'Title')]", 0);
+				elTitle.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				
+			
+				elTitleValue = Tab1.FindElementByXPath("//input[contains(@id,'edit_asin_title')]", 1);
+				if(elTitleValue.IsVoid){
+						Thread.Sleep(5000);
+					}
+					else{
+						break;
+					}
+				}
+				
+				elTitleValue.SetValue(strTitleStandart, "Full");
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+
+				elTitleValue.Click();
+				//проверка на ошибку
+				HtmlElement elError = Tab1.FindElementByXPath("//div[@class='a-alert-content']", 0);
+				if(!elError.IsVoid){
+					project.SendInfoToLog("Неизвестно что делать!");
+				}
+				break;
+			case "Brand":
+				project.SendInfoToLog("Меняем Brand", true);
+				//меняем Brand
+				elTitle = Tab1.FindElementByXPath("//a[contains(@id,'select_editable_field') and contains(text(),'Brand')]", 0);
+				elTitle.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+
+				elTitleValue = Tab1.FindElementByXPath("//input[contains(@id,'edit_asin_brand')]", 1);
+				elTitleValue.SetValue(strBrandStandart, "Full");
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				
+				elTitleValue.Click();
+				break;
+			case "Bullet points":
+				project.SendInfoToLog("Меняем Bullet points", true);
+				
+				//меняем Bullet
+				elTitle = Tab1.FindElementByXPath("//a[contains(@id,'select_editable_field') and contains(text(),'Bullet points')]", 0);
+				elTitle.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+		
+				elTitleValue = Tab1.FindElementByXPath("(//div[@id='editableFeatureList'])[2]", 0);
+		
+
+				//формируем структуру тегов как на сайте!
+				
+				
+				List<string> listTemp = new List<string>();
+				//берем буллиты
+				string strStart = @"<ul id=""newProductFeatures"" contenteditable=""true"">";
+				string strEnd = "</ul>";
+				//добавляем в список начальный теги
+				listTemp.Add(strStart);
+				int intCountBullits = 15;
+				//приклеиваем к буллетам теги и добавляем в список
+				for(int s=0; s<5; s++){
+					string strChek = tblBroukenListing.GetCell(intCountBullits, 1);
+					if(strChek!="x"){
+						string strBullit = @"<li class=""a-spacing-mini a-declarative""><span class=""a-list-item a-declarative"">" + strChek + "</span></li>";
+						project.SendInfoToLog(strBullit);
+						listTemp.Add(strBullit);
+						intCountBullits++;
+						}
+				}
+				//добавляем закрывающие теги
+				listTemp.Add(strEnd);
+				
+				//объединяем список в одну строку
+				string strSetBullet = "";
+				string strListToStringDelimiter = Environment.NewLine;
+				strSetBullet = String.Join(strListToStringDelimiter, listTemp);
+				project.SendInfoToLog(strSetBullet);
+				
+				//устанавливаем атрибут
+				elTitleValue.SetAttribute("InnerHtml", strSetBullet);
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				break;
+			case "Images":
+				project.SendInfoToLog("Меняем Images", true);
+				
+				//меняем Images
+				elTitle = Tab1.FindElementByXPath("//a[contains(@id,'select_editable_field') and contains(text(),'Images')]", 0);
+				elTitle.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+
+				elTitleValue = Tab1.FindElementByXPath("//textarea[contains(@id,'edit_asin_other_image_issue')]", 1);
+				elTitleValue.SetValue(strOtherImageIssue, "Full");
+				Tab1.WaitDownloading();
+				Thread.Sleep(1000);
+				break;
+			case "Product Description":
+				project.SendInfoToLog("Меняем Product Description", true);
+
+				//меняем Product Description
+				elTitle = Tab1.FindElementByXPath("//a[contains(@id,'select_editable_field') and contains(text(),'Product Description')]", 0);
+				elTitle.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+
+				elTitleValue = Tab1.FindElementByXPath("//textarea[contains(@id,'edit_asin_description')]", 1);
+				elTitleValue.SetValue(strDescriptionStandart, "Full");
+				Tab1.WaitDownloading();
+				Thread.Sleep(1000);
+				
+				elTitleValue.Click();
+				break;
+	//		case "Item Dimensions":
+	//			strCellResult = tblStandart.GetCell(8, 0);
+	//			strCellResult = "start" + strCellResult + "end";
+	//			string strItemLength = Regex.Match(strCellResult, @"(?<=start)[\w\W]*?(?=\ x\ )").Value;
+	//			string strItemWidth = Regex.Match(strCellResult, @"(?<=\ x\ )[\w\W]*?(?=\ x\ )").Value;
+	//			string strItemHeight = Regex.Match(strCellResult, @"(?<=\ x\ ).*(?=\ )").Value;
+	//			strItemHeight = Regex.Match(strItemHeight, @"(?<=\ x\ ).*").Value;
+	//			string strPattern = String.Format(@"(?<={0}\ )[\w\W]*?(?=end)", strItemHeight);
+	//			string strItemDimensionsMeasure = Regex.Match(strCellResult, strPattern).Value;
+	//
+	//			//вставляем в строку переменную с единицами изменения
+	//			strFormat = String.Format("//a[contains(@id,'dropdown') and contains(text(),'{0}')]", strItemDimensionsMeasure);
+	//
+	//			//выбираем Item Dimensions
+	//			elTitle = Tab1.FindElementByXPath("//a[contains(@id,'select_editable_field') and contains(text(),'Item Dimensions')]", 0);
+	//			elTitle.Click();
+	//			Tab1.WaitDownloading();
+	//			Thread.Sleep(300);
+	//			//вставляем данные
+	//			elTitleValue = Tab1.FindElementByXPath("//input[@id='itemLength']", 1);
+	//			elTitleValue.SetValue(strItemLength, "Full");
+	//			Tab1.WaitDownloading();
+	//			Thread.Sleep(500);
+	//			
+	//			elTitleValue = Tab1.FindElementByXPath("//input[@id='itemWidth']", 1);
+	//			elTitleValue.SetValue(strItemWidth, "Full");
+	//			Tab1.WaitDownloading();
+	//			Thread.Sleep(500);
+	//			
+	//			elTitleValue = Tab1.FindElementByXPath("//input[@id='itemHeight']", 1);
+	//			elTitleValue.SetValue(strItemHeight, "Full");
+	//			Tab1.WaitDownloading();
+	//			Thread.Sleep(500);
+	//			
+	//			//кликаем на выбор единиц измерения
+	//			elTitleValue = Tab1.FindElementByXPath("//span[@id='itemDimensionsUnit']//span[@class='a-dropdown-prompt']", 1);
+	//			elTitleValue.Click();
+	//			Tab1.WaitDownloading();
+	//			Thread.Sleep(500);
+	//			
+	//			//выбираем единицы измерения
+	//			elTitleValue = Tab1.FindElementByXPath(strFormat, 1);
+	//			elTitleValue.Click();
+	//			Tab1.WaitDownloading();
+	//			Thread.Sleep(500);
+	//			break;
+			case "Packaging Dimensions":
+				project.SendInfoToLog("Меняем Packaging Dimensions", true);
+
+				strCellResult = tblStandart.GetCell(9, 0);
+				strCellResult = "start" + strCellResult + "end";
+				string strPackagingLength = Regex.Match(strCellResult, @"(?<=start)[\w\W]*?(?=\ x\ )").Value;
+				string strPackagingWidth = Regex.Match(strCellResult, @"(?<=\ x\ )[\w\W]*?(?=\ x\ )").Value;
+				string strPackagingHeight = Regex.Match(strCellResult, @"(?<=\ x\ ).*(?=\ )").Value;
+				strPackagingHeight = Regex.Match(strPackagingHeight, @"(?<=\ x\ ).*").Value;
+				string strPattern = String.Format(@"(?<={0}\ )[\w\W]*?(?=end)", strPackagingHeight);
+				string strPackagingDimensionsMeasure = Regex.Match(strCellResult, strPattern).Value;
+
+				//вставляем в строку переменную с единицами изменения
+				strFormat = String.Format("//a[contains(@id,'dropdown') and contains(text(),'{0}')]", strPackagingDimensionsMeasure);
+
+				//выбираем Packaging Dimensions
+				elTitle = Tab1.FindElementByXPath("//a[contains(@id,'select_editable_field') and contains(text(),'Packaging Dimensions')]", 0);
+				elTitle.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				//вставляем данные
+				elTitleValue = Tab1.FindElementByXPath("//input[@id='packagingLength']", 1);
+				elTitleValue.SetValue(strPackagingLength, "Full");
+				Tab1.WaitDownloading();
+				Thread.Sleep(1000);
+				
+				elTitleValue = Tab1.FindElementByXPath("//input[@id='packagingWidth']", 1);
+				elTitleValue.SetValue(strPackagingWidth, "Full");
+				Tab1.WaitDownloading();
+				Thread.Sleep(1000);
+				
+				elTitleValue = Tab1.FindElementByXPath("//input[@id='packagingHeight']", 1);
+				elTitleValue.SetValue(strPackagingHeight, "Full");
+				Tab1.WaitDownloading();
+				Thread.Sleep(1000);
+				
+				//кликаем на выбор единиц измерения
+				elTitleValue = Tab1.FindElementByXPath("//span[@id='packagingDimensionsUnit']//span[@class='a-dropdown-prompt']", 1);
+				elTitleValue.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				
+				//выбираем единицы измерения
+				elTitleValue = Tab1.FindElementByXPath(strFormat, 0);
+				elTitleValue.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				break;
+	//		case "Item Weight":
+	//			//получаем данные из ячейка и разбиваем на переменные
+	//			strCellResult = tblStandart.GetCell(10, 0);
+	//			string strItemWeight = Regex.Match(strCellResult, @".*(?=\ )").Value;
+	//			string strItemMeasure = Regex.Match(strCellResult, @"(?<=\ ).*").Value;
+	//			project.SendInfoToLog(strItemMeasure);
+	//
+	//			//вставляем в строку переменную с единицами изменения
+	//			strFormat = String.Format("//a[contains(@id,'dropdown') and contains(text(),'{0}')]", strItemMeasure);
+	//			project.SendInfoToLog(strFormat);
+	//			//меняем Item Weight
+	//			elTitle = Tab1.FindElementByXPath("//a[contains(@id,'select_editable_field') and contains(text(),'Item Weight')]", 0);
+	//			elTitle.Click();
+	//			Tab1.WaitDownloading();
+	//			Thread.Sleep(300);
+	//			
+	//			elTitleValue = Tab1.FindElementByXPath("//input[@id='itemWeight']", 1);
+	//			elTitleValue.SetValue(strItemWeight, "Full");
+	//			Tab1.WaitDownloading();
+	//			Thread.Sleep(500);
+	//
+	//			elTitleValue = Tab1.FindElementByXPath("//span[@id='itemWeightUnit']//span[@class='a-dropdown-prompt']", 1);
+	//			elTitleValue.Click();
+	//			Tab1.WaitDownloading();
+	//			Thread.Sleep(500);
+	//			
+	//			//выбираем единицы измерения
+	//			elTitleValue = Tab1.FindElementByXPath(strFormat, 0);
+	//			elTitleValue.Click();
+	//			Tab1.WaitDownloading();
+	//			Thread.Sleep(500);
+	//			break;
+			case "Packaging Weight":
+				project.SendInfoToLog("Меняем Packaging Weight", true);
+
+				strCellResult = tblStandart.GetCell(11, 0);
+				string strPackagingWeight = Regex.Match(strCellResult, @".*(?=\ )").Value;
+				string strPackagingMeasure = Regex.Match(strCellResult, @"(?<=\ ).*").Value;
+				
+				//вставляем в строку переменную с единицами изменения
+				strFormat = String.Format("//a[contains(@id,'dropdown') and contains(text(),'{0}')]", strPackagingMeasure);
+
+				//выбираем Packaging Weight
+				elTitle = Tab1.FindElementByXPath("//a[contains(@id,'select_editable_field') and contains(text(),'Packaging Weight')]", 0);
+				elTitle.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				//вставляем данные
+				elTitleValue = Tab1.FindElementByXPath("//input[@id='packagingWeight']", 1);
+				elTitleValue.SetValue(strPackagingWeight, "Full");
+				Tab1.WaitDownloading();
+				Thread.Sleep(1000);
+				//кликаем на выбор единиц измерения
+				elTitleValue = Tab1.FindElementByXPath("//span[@id='packagingWeightUnit']//span[@class='a-dropdown-prompt']", 1);
+				elTitleValue.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				//выбираем единицы измерения
+				
+				elTitleValue = Tab1.FindElementByXPath(strFormat, 1);
+				elTitleValue.Click();
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				break;
+		}
+		
+	//	//если список не пустой	
+	//	if(listBroukenListing.Count!=0){
+	//		//добавляем новый элемент меню
+	//		elAddAtribute = Tab1.FindElementByXPath("//div[@id='add_another_attribute']/a", 0);
+	//		elAddAtribute.Click();
+	//		Tab1.WaitDownloading();
+	//		Thread.Sleep(500);
+	//	}
+	}
+
+
+	//
+	//выбираем пруф
+	HtmlElement elProof = Tab1.FindElementByXPath("//div[@id='proof_details_wrong_information_product']/div[contains(@class,'scu-button-wrapper')]/div/label/span[@class='a-label a-radio-label']", 0);
+	elProof.Click();
+	Tab1.WaitDownloading();
+	Thread.Sleep(500);
+
+	//вставляем адрес сайта
+	HtmlElement elSiteUrl = Tab1.FindElementByXPath("//input[@name='website_proof_input']", 0);
+	elSiteUrl.SetValue(strAuthoritativeWebsite, "Full");
+	Tab1.WaitDownloading();
+	Thread.Sleep(500);
+
+	HtmlElement elComment = Tab1.FindElementByXPath("//textarea[@id='website_proof_details']", 0);
+	elComment.SetValue(strProofComment, "Full");
+	Tab1.WaitDownloading();
+	Thread.Sleep(500);
+	
+	//ставим галочку
+	HtmlElement elCheckbox = Tab1.FindElementByXPath("//input[@id='biz_crit_flag_wrong_information_product']", 0);
+	if(!elCheckbox.IsVoid){
+//		elCheckbox.Click();
+		Tab1.FullEmulationMouseMoveToHtmlElement(elCheckbox);
+		instance.WaitFieldEmulationDelay();
+		elCheckbox.RiseEvent("click", instance.EmulationLevel);
+		project.SendInfoToLog("Галочка поставлена.", true);
+	}
+	else{
+		project.SendInfoToLog("Чекбокс не обнаружен.", true);
+	}
+	//ставим галочки в предупреждениях
+	HtmlElementCollection colWarnings = Tab1.FindElementsByXPath("//a[@id='style_guide_message_popover_trigger']");
+	foreach(HtmlElement elWarning in colWarnings){
+		Tab1.FullEmulationMouseMoveToHtmlElement(elWarning);
+		instance.WaitFieldEmulationDelay();
+		elWarning.RiseEvent("click", instance.EmulationLevel);
+		HtmlElement elWarningChekbox = Tab1.FindElementByXPath("//input[@id='allow_user_override']", 0);
+		elWarningChekbox.Click();
+	}
+	
+	
+/////нажимаем отправить
+	//HtmlElement elSend = Tab1.FindElementByXPath("//div[@class='fake-list']//button[contains(text(),'Send')]", 0);
+	//elSend.Click();
+
+//	//удаляем две первые строки из таблицы
+//	tblBroukenListing.DeleteRow(0);
+//	Thread.Sleep(2000);
+//	tblBroukenListing.DeleteRow(0);
+	
+	
+	project.Profile.Save(strProfilePath);
+	Thread.Sleep(20000);
+
+}
+
+//Title - 0
+//Brand - 1
+//Bullet points - 2
+//Images - 3
+//Product Description - 4
+//Item Dimensions - 5
+//Packaging Dimensions - 6
+//Item Weight - 7
+//Packaging Weight - 8
+//Other - 9
