@@ -1,0 +1,87 @@
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head></head><body active_language="Russian" id="body" class="skin-purple">﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿
+    <meta charset="utf-8">
+    <title> Editor </title>
+    <link href="https://fonts.googleapis.com/css?family=Oswald%7CPT+Sans%7CPlay%7CRoboto+Condensed%7CUbuntu&amp;subset=cyrillic" rel="stylesheet">
+    <link rel="stylesheet" href="file:///C:/Program%20Files%20(x86)/ZennoLab/RU/ZennoPoster%20Pro/5.17.1.0/Progs/HtmlEditorContent/bootstrap.3.3.7/content/Content/bootstrap.min.css">
+    <link rel="stylesheet" href="file:///C:/Program%20Files%20(x86)/ZennoLab/RU/ZennoPoster%20Pro/5.17.1.0/Progs/HtmlEditorContent/Select2.js.4.0.3/content/Content/css/select2.min.css">
+    <link rel="stylesheet" href="file:///C:/Program%20Files%20(x86)/ZennoLab/RU/ZennoPoster%20Pro/5.17.1.0/Progs/HtmlEditorContent/AdminLTE.2.3.3/content/admin-lte/css/AdminLTE.min.css">
+    <script src="file:///C:/Program%20Files%20(x86)/ZennoLab/RU/ZennoPoster%20Pro/5.17.1.0/Progs/HtmlEditorContent/jQuery.3.1.1/Content/Scripts/jquery-3.1.1.min.js"></script>
+    <script src="file:///C:/Program%20Files%20(x86)/ZennoLab/RU/ZennoPoster%20Pro/5.17.1.0/Progs/HtmlEditorContent/bootstrap.3.3.7/content/Scripts/bootstrap.min.js"></script>
+    <script src="file:///C:/Program%20Files%20(x86)/ZennoLab/RU/ZennoPoster%20Pro/5.17.1.0/Progs/HtmlEditorContent/Select2.js.4.0.3/content/Scripts/select2.js"></script>
+    <script src="file:///C:/Program%20Files%20(x86)/ZennoLab/RU/ZennoPoster%20Pro/5.17.1.0/Progs/HtmlEditorContent/AdminLTE.2.3.3/content/admin-lte/js/app.min.js"></script>
+    <script src="file:///C:/Program%20Files%20(x86)/ZennoLab/RU/ZennoPoster%20Pro/5.17.1.0/Progs/HtmlEditorContent/fastclick.js.1.0.6/content/Scripts/fastclick.js"></script>
+    <script src="file:///C:/Program%20Files%20(x86)/ZennoLab/RU/ZennoPoster%20Pro/5.17.1.0/Progs/HtmlEditorContent/JSBotUI/Content/Scripts/BotUiApi.js"></script>
+    <!-- This style for BotUI constructor only. Don't edit it! -->
+    <!-- This block should be last in the Head. Don't add any strings after this block! -->
+    <style id="style">
+    html, body {
+        width: 100 %;
+        height: 100 %;
+        margin: 0;
+        padding: 0;
+    }
+    div.fixed {
+        cursor: pointer;
+        position: absolute;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+    .hidden {
+        visibility: hidden;
+    }
+    div.absolute {
+        position: absolute;
+    }
+    div.selected {
+        z-index: 2;
+        outline-style: solid;
+        outline-width: 2px;
+        outline-color: #f46542;
+    }
+    div.level2 {
+        z-index: 3;
+    }
+    div.level3 {
+        z-index: 4;
+        }
+    div.level4 {
+        z-index: 5;
+    }
+    label.option {
+        white-space: nowrap; 
+        overflow: hidden;
+    }
+    body {
+        font-family: 'Play';
+        background-image: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+    }
+    .user-control{
+        box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    }
+    textarea {
+        overflow-y: hidden;
+    }
+    div.selected:hover {}
+    b, li, ul, text, span, div.radio, label, input, h1, select, button, div.ignore, div.tab-content, div.tab-pane, option, textarea {
+        pointer-events: none;
+        margin: 0px;
+        padding: 0px;
+    }
+    html {
+        overflow: auto; 
+        margin-left: calc(100vw - 100%);
+    }
+    </style>
+
+
+<div anchorleft="1" anchortop="1" anchorright="0" anchorbot="0" min_width="15" min_height="15" class="fixed form-group" style="top: 57px; left: 30px; width: 125px; height: 28px" type="text" id="1">
+	<div class="ignore" style="font-style:normal; font-weight:normal; text-decoration:none; font-size:10pt; width: 125px; height: 28px; color:rgb(64, 64, 64); font-family:'Play'" language_russian="Что будем делать:">Что будем делать:</div>
+</div><div anchorleft="1" anchortop="1" anchorright="0" anchorbot="0" min_width="20" min_height="15" valuable="" default_value="Собираем инфу об АСИНе" class="fixed form-group" style="top: 90px; left: 30px; Width: 265px; Height: 40px" type="combobox" id="2" variable_name="cfg_select">
+	<select class="form-control" style="width: 265px; height: 40px">
+		<option value="Собираем инфу об АСИНе">Собираем инфу об АСИНе</option>
+		<option value="Мониторим изменения в АСИНе">Мониторим изменения в АСИНе</option>
+		</select>
+</div></body></html>
