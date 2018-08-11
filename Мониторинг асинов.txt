@@ -1,0 +1,494 @@
+
+
+//lists
+IZennoList lstAsins = project.Lists["Asins"];
+IZennoList lstProxy = project.Lists["Proxy"];
+IZennoList lstUserAgent = project.Lists["UserAgent"];
+IZennoList lstBullits = project.Lists["Bullits"];
+IZennoList lstChanges = project.Lists["Changes"];
+IZennoList lstDescription = project.Lists["Interim"];
+IZennoList lstTelegramUserID = project.Lists["TelegramUserID"];
+
+//tables
+IZennoTable tblStandart = project.Tables["Standart"];
+IZennoTable tblTemp = project.Tables["Temp"];
+IZennoTable tblWhatChanged = project.Tables["What_changed"];
+IZennoTable tblBroukenListing = project.Tables["BroukenListing"];
+//tblBroukenListing.Clear();
+
+//Создаем временный список listCatigories
+List<string> listSellers = new List<string>();
+List<string> listSellersUrl = new List<string>();
+
+Tab Tab1 = instance.ActiveTab;
+
+
+//variables
+
+string strAsin = "";
+string strProdUrl = "";
+string strBrand = "";
+string strCategory = "";
+string strProxy = "";
+string strUserAgent = "";
+string strGetResultBody = "";
+string strProdName = "";
+string strBullet = "";
+string strDescription = "";
+string strImg = "";
+string strFormat = "";
+string strParameters = "";
+string strPackageDimensions = "";
+string strProductDimensions = "";
+string strItemWeight = "";
+string strShippingWeight = "";
+string strEmail = "seemax.mail@gmail.com";
+string strProxyEmail = "http://usa3080622:2XUYNzKGVB@198.23.237.218:7384";
+	
+
+for(int a=0; a<tblStandart.RowCount; a++){
+	
+	bool blnAsin = false;
+	bool blnBrand = false;
+	bool blnCategory = false;
+	bool blnProdName = false;
+	bool blnBullet = false;
+	bool blnDescription = false;
+	bool blnImg = false;
+	bool blSorry = false;
+	bool blnPackageDimensions = false;
+	bool blnProductDimensions = false;
+	bool blnItemWeight = false;
+	bool blnShippingWeight = false;
+	
+	string[] arrParameters = tblStandart.GetRow(a).ToArray();
+	string strAsinStandart = arrParameters[1];
+	string strProdNameStandart = arrParameters[2];
+	string strBrandStandart = arrParameters[3];
+	string strBulletStandart = arrParameters[4];
+	string strDescriptionStandart = arrParameters[5];
+	string strCategoryStandart = arrParameters[6];
+	string strImgStandart = arrParameters[7];
+	string strProductDimensionsStandart = arrParameters[8];
+	string strPackageDimensionsStandart = arrParameters[9];
+	string strItemWeightStandart = arrParameters[10];
+	string strShippingWeightStandart = arrParameters[11];
+	project.SendInfoToLog(strAsinStandart);
+	project.SendInfoToLog(strProdNameStandart);
+	project.SendInfoToLog(strBrandStandart);
+	project.SendInfoToLog(strBulletStandart);
+	project.SendInfoToLog(strDescriptionStandart);
+	project.SendInfoToLog(strCategoryStandart);
+	project.SendInfoToLog(strImgStandart);
+	project.SendInfoToLog(strProductDimensionsStandart);
+	project.SendInfoToLog("Package Dimensions Standart: " + strPackageDimensionsStandart);
+	project.SendInfoToLog(strItemWeightStandart);
+	project.SendInfoToLog(strShippingWeightStandart);
+	
+	project.SendInfoToLog(tblStandart.RowCount.ToString());
+	
+	//берем Асин из таблицы
+	strAsinStandart = tblStandart.GetCell(1, a);
+	project.SendInfoToLog(strAsinStandart);
+
+
+
+	//берем из списка прокси и ЮА
+	lock(SyncObjects.ListSyncer){
+		strProxy = lstProxy[0];
+		project.SendInfoToLog(strProxy, true);
+		lstProxy.RemoveAt(0);
+		lstProxy.Add(strProxy);
+	}
+	//берем из списка  ЮА
+	lock(SyncObjects.ListSyncer){
+		strUserAgent = lstUserAgent[0];
+		lstUserAgent.RemoveAt(0);
+		lstUserAgent.Add(strUserAgent);
+	}
+
+	//берем ссылку на товар
+	strProdUrl = "https://www.amazon.com/dp/" + strAsinStandart;
+//	project.SendInfoToLog(strProdUrl, true);
+//	instance.SetProxy(strProxy, false);
+//	Tab1.Navigate("https://whoer.net/");
+
+
+
+	//берем данные о товаре гет запросом
+	strGetResultBody = ZennoPoster.HttpGet(strProdUrl, strProxy, "UTF-8", ZennoLab.InterfacesLibrary.Enums.Http.ResponceType.BodyOnly, 30000, "", strUserAgent);
+	project.Variables["html_body"].Value = strGetResultBody;
+	//project.SendInfoToLog(strGetResultBody);
+	
+	if(strGetResultBody.Contains("To discuss automated access to Amazon")){
+		project.SendWarningToLog("Амазон палит прокси!!!", true);
+		
+	}
+
+	lstChanges.Clear();
+	//проверка есть ли такая страница
+	if(strGetResultBody.Contains("Sorry! We couldn't find that page. Try searching or go to Amazon's home page.")){
+		project.SendWarningToLog("Sorry!" + "  " + strAsinStandart, true);
+		strFormat = String.Format("ASIN {0}: Page deleted.", strAsinStandart);
+		lstChanges.Add(strFormat);
+		blSorry = true;
+		
+	}
+	else{
+		//берем название товара
+		strProdName = Regex.Match(strGetResultBody, @"(?<=\ class=""a-size-large"">)[\w\W]*?(?=</span>)").Value;
+		strProdName = System.Net.WebUtility.HtmlDecode(strProdName);
+		strProdName = strProdName.Trim();
+		project.SendInfoToLog("Название товара: " + strProdName, true);
+		//lstTest.Add(strProdName);
+
+		//удаляем пробелы и все символы кроме букв и цифр
+		string strProdNameToLower = Regex.Replace(strProdName, @"[^a-zA-ZА-Яа-я0-9\s]", "").Replace(" ", "").ToLower();
+		//project.SendInfoToLog(strProdNameToLower);
+
+
+		//берем бренд
+		if(strGetResultBody.Contains("<a id=\"bylineInfo\" class=\"a-link-normal\" href=")){
+			strBrand = Regex.Match(strGetResultBody, @"(?<=<a\ id=""bylineInfo""\ class=""a-link-normal""\ href="").*(?=</a>)").Value;
+			strBrand = strBrand.Trim();
+			strBrand = Regex.Match(strBrand, @"(?<="">).*").Value;
+		}
+		else{
+			strBrand = Regex.Match(strGetResultBody, @"(?<=<a\ id=""brand""\ class=""a-link-normal""\ href=)[\w\W]*?(?=</a>)").Value;
+			//project.SendInfoToLog(strBrand);
+			strBrand = strBrand.Trim();
+			//project.SendInfoToLog(strBrand);
+			strBrand = Regex.Match(strBrand, @"(?<=keywords=)[\w\W]*?(?="">)").Value;
+		}
+		project.SendInfoToLog(strBrand);
+
+		lstBullits.Clear();
+
+		//берем буллиты
+		MatchCollection mthRegexBullit = Regex.Matches(strGetResultBody, @"(?<=<li><span\ class=""a-list-item"">\ )[\w\W]*?(?=</span></li>)");
+		foreach(Match mthBullit in mthRegexBullit){
+			strBullet = mthBullit.Value;
+			strBullet = System.Net.WebUtility.HtmlDecode(strBullet);
+			strBullet = strBullet.Trim();
+			lstBullits.Add(strBullet);
+			project.SendInfoToLog(strBullet);
+		}
+
+
+		//объединение элементов списка в одну строку
+		string strListToStringDelimiter = Environment.NewLine;
+		strBullet = String.Join(strListToStringDelimiter, lstBullits);
+		project.SendInfoToLog("Все буллиты:" + strBullet);
+		project.SendInfoToLog("Все буллиты стандарт:" + strBulletStandart);
+
+
+	//берем описание
+	strDescription = Regex.Match(strGetResultBody, @"(?<=<div\ id=""productDescription"")[\w\W]*?</p>").Value;
+	strDescription = Regex.Match(strDescription, @"(?<=<p>)[\w\W]*?(?=</p>)").Value;
+//	project.SendInfoToLog(strDescription);
+	if(strDescription==""){
+		strDescription = Regex.Match(strGetResultBody, @"(?<=<div\ class=""celwidget\ aplus-module\ 3p-module-b""\ cel_widget_id=""aplus-3p-module-b"">)[\w\W]*(?=<div\ id=""dpx-window-blind-disclaimer_feature_div"">)").Value;
+	}
+//	project.SendInfoToLog(strDescription);
+	//удаляем символы HTML
+	strDescription = System.Net.WebUtility.HtmlDecode(strDescription);
+//	project.SendInfoToLog(strDescription);
+	
+	//удаляем теги HTML
+	strDescription = Regex.Replace(strDescription, @"<[^>]+>", string.Empty);
+//	project.SendInfoToLog(strDescription);
+	
+	strDescription = strDescription.Trim();
+//	project.SendInfoToLog(strDescription);
+	
+	//удаляем пробелы внутри строки
+	strDescription = Regex.Replace(strDescription, @"\s+", " ");
+	project.SendInfoToLog(strDescription);
+
+		//берем категорию
+		strCategory = Regex.Match(strGetResultBody, @"(?<=\ in\ ).*?(?=\ \(<a\ href=)").Value;
+		strCategory = strCategory.Trim();
+		project.SendInfoToLog("Категория: " + strCategory + "  " + strAsin, true);
+
+		//парсим фото
+		strImg = Regex.Match(strGetResultBody, @"<img\ alt=.*</script>").Value;
+		strImg = Regex.Match(strImg, @"https://.*?\.jpg").Value;
+		project.SendInfoToLog(strImg);
+
+		//берем АСИН
+		MatchCollection mthRegexParameters = Regex.Matches(strGetResultBody, @"(?<=<th\ class=""a-color-secondary\ a-size-base\ prodDetSectionEntry"">)[\w\W]*?(?=</tr>)");
+		foreach(Match mthParameters in mthRegexParameters){
+			strParameters = mthParameters.Value;
+			if(strParameters.Contains("ASIN")){
+				strAsin = Regex.Match(strParameters, @"(?<=<td\ class=""a-size-base"">)[\w\W]*?(?=</td>)").Value;
+				strAsin = strAsin.Trim();
+				project.SendInfoToLog(strAsin);
+			}
+			if(strParameters.Contains("Package Dimensions")){
+				strPackageDimensions = Regex.Match(strParameters, @"(?<=<td\ class=""a-size-base"">)[\w\W]*?(?=</td>)").Value;
+				strPackageDimensions = strPackageDimensions.Trim();
+				project.SendInfoToLog("Package Dimensions: " + strPackageDimensions);
+
+			}
+			
+			if(strParameters.Contains("Product Dimensions")){
+				strProductDimensions = Regex.Match(strParameters, @"(?<=<td\ class=""a-size-base"">)[\w\W]*?(?=</td>)").Value;
+				strProductDimensions = strProductDimensions.Trim();
+				project.SendInfoToLog(strProductDimensions);
+			}
+
+
+			if(strParameters.Contains("Item Weight")){
+				strItemWeight = Regex.Match(strParameters, @"(?<=<td\ class=""a-size-base"">)[\w\W]*?(?=</td>)").Value;
+				strItemWeight = strItemWeight.Trim();
+				project.SendInfoToLog(strItemWeight);
+
+			}
+
+			if(strParameters.Contains("Shipping Weight")){
+				strShippingWeight = Regex.Match(strParameters, @"(?<=<td\ class=""a-size-base"">)[\w\W]*?(?=</td>)").Value;
+				strShippingWeight = strShippingWeight.Trim();
+				strShippingWeight = Regex.Match(strShippingWeight, @"[\w\W]*?\ (?=\()").Value;
+				strShippingWeight = strShippingWeight.Trim();
+				project.SendInfoToLog(strShippingWeight);
+
+			}
+			
+		}
+		
+		if(strProductDimensions==""){
+			strProductDimensions = "x";
+			project.SendInfoToLog(strProductDimensions);
+			
+		}
+		
+		if(strPackageDimensions==""){
+			strPackageDimensions = "x";
+			project.SendInfoToLog("Package Dimensions: " + strPackageDimensions);
+			
+		}
+
+
+		if(strItemWeight==""){
+			strItemWeight = "x";
+			project.SendInfoToLog(strItemWeight);
+			
+		}
+		
+		if(strShippingWeight==""){
+			strShippingWeight = "x";
+			project.SendInfoToLog(strShippingWeight);
+			
+		}
+
+		int i = 1;
+		int b = tblBroukenListing.RowCount;
+		if(strAsinStandart!=strAsin){
+			strFormat = String.Format("ASIN {0}: Сhanged ASIN.", strAsinStandart);
+			lstChanges.Add(strFormat);
+			blnAsin = true;
+			project.SendInfoToLog(strFormat, true);
+		}
+		if(strProdNameStandart!=strProdName){
+			strFormat = String.Format("ASIN {0}: Сhanged Title.", strAsinStandart);
+			lstChanges.Add(strFormat);
+			blnProdName = true;
+			tblBroukenListing.SetCell(i, b, "Title");
+			i++;
+			project.SendInfoToLog(strFormat, true);
+		}
+		if(strBrandStandart!=strBrand){
+			strFormat = String.Format("ASIN {0}: Сhanged Brand.", strAsinStandart);
+			lstChanges.Add(strFormat);
+			blnBrand = true;
+			tblBroukenListing.SetCell(i, b, "Brand");
+			i++;
+			project.SendInfoToLog(strFormat, true);
+		}
+
+		//string strBalba = strBullet.Replace(Convert.ToString((char)10, Convert.ToString((char)13)+Convert.ToString((char)10)));
+		strBullet = strBullet.Replace(Convert.ToString((char)13), String.Empty);
+		
+
+		
+		if(strBulletStandart!=strBullet){
+			strFormat = String.Format("ASIN {0}: Сhanged Bullit.", strAsinStandart);
+			lstChanges.Add(strFormat);
+			blnBullet = true;
+			tblBroukenListing.SetCell(i, b, "Bullet points");
+			i++;
+			project.SendInfoToLog(strFormat, true);
+		}
+		if(strDescriptionStandart!=strDescription){
+			strFormat = String.Format("ASIN {0}: Сhanged Description.", strAsinStandart);
+			lstChanges.Add(strFormat);
+			blnDescription = true;
+			tblBroukenListing.SetCell(i, b, "Product Description");
+			i++;
+			project.SendInfoToLog(strFormat, true);
+		}
+		if(strCategoryStandart!=strCategory){
+			strFormat = String.Format("ASIN {0}: Сhanged Category.", strAsinStandart);
+			lstChanges.Add(strFormat);
+			blnCategory = true;
+			project.SendInfoToLog(strFormat, true);
+		}
+		if(strImgStandart!=strImg){
+			strFormat = String.Format("ASIN {0}: Сhanged Image.", strAsinStandart);
+			lstChanges.Add(strFormat);
+			blnImg = true;
+			tblBroukenListing.SetCell(i, b, "Images");
+			i++;
+			project.SendInfoToLog(strFormat, true);
+		}
+//		
+//		if(strProductDimensionsStandart!=strProductDimensions){
+//			strFormat = String.Format("ASIN {0}: Сhanged Product Dimensions.", strAsinStandart);
+//			lstChanges.Add(strFormat);
+//			blnProductDimensions = true;
+//			tblBroukenListing.SetCell(i, b, "Item Dimensions");
+//			i++;
+//			project.SendInfoToLog(strFormat, true);
+//		}
+		if(strPackageDimensionsStandart!=strPackageDimensions){
+			strFormat = String.Format("ASIN {0}: Сhanged Package Dimensions.", strAsinStandart);
+			lstChanges.Add(strFormat);
+			blnPackageDimensions = true;
+			tblBroukenListing.SetCell(i, b, "Packaging Dimensions");
+			i++;
+			project.SendInfoToLog(strFormat, true);
+		}
+
+//		if(strItemWeightStandart!=strItemWeight){
+//			strFormat = String.Format("ASIN {0}: Сhanged Item Weight.", strAsinStandart);
+//			lstChanges.Add(strFormat);
+//			blnItemWeight = true;
+//			tblBroukenListing.SetCell(i, b, "Item Weight");
+//			i++;
+//			project.SendInfoToLog(strFormat, true);
+//		}
+		if(strShippingWeightStandart!=strShippingWeight){
+			strFormat = String.Format("ASIN {0}: Сhanged Shipping Weight.", strAsinStandart);
+			lstChanges.Add(strFormat);
+			blnShippingWeight = true;
+			tblBroukenListing.SetCell(i, b, "Packaging Weight");
+			i++;
+			project.SendInfoToLog(strFormat, true);
+		}
+
+
+	//загрузить профиль
+//	project.Profile.Load(project.Directory + @"\Вспомогательные файлы\tdfxy1uq@mail.ru.zpprofile"); //загружаем профиль из файла D:\profile.zpprofile
+
+	//	//UserAgent - заголовок "userAgent" браузера профиля (http://www.w3schools.com/jsref/prop_nav_useragent.asp)
+	//	project.Profile.UserAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 YaBrowser/17.9.0.2081 Yowser/2.5 Safari/537.36";
+	//
+	//	//установить прокси
+	//	instance.SetProxy(strProxyEmail, false);
+		
+		//если хоть один из параметров изменен, то отправляем письмо
+		if(blnAsin==true||blnBrand==true||blnCategory==true||blnProdName==true||blnBullet==true||blnDescription==true||blnImg==true||blnPackageDimensions==true||blnProductDimensions==true||blnItemWeight==true||blnShippingWeight==true){
+			
+			//добавлям АСИН в таблицу с уже измененными параметрами
+			tblBroukenListing.SetCell(0, b, strAsinStandart);
+			
+			//добавляем данные из таблицы с эталонами в таблицу с поломаными листингами
+			tblBroukenListing.AddRow(tblStandart.GetRow(a));
+			
+			//добавляем дату в список с изменениями
+			lstChanges.Insert(0, DateTime.Now.ToString());
+			
+			//объединение элементов списка в одну строку
+			strListToStringDelimiter = Environment.NewLine;
+			string strMessage = String.Join(strListToStringDelimiter, lstChanges);
+			project.SendInfoToLog(strMessage);
+			
+			project.SendInfoToLog("Отправляем уведомление в тедеграм.", true);
+		
+			//отправка сообщения в телеграм всем пользователям в списке
+			for(int x=0; x<lstTelegramUserID.Count; x++){
+				string strChatID = lstTelegramUserID[x];
+				strChatID = Regex.Match(strChatID, @"(?<==)[\w\W]*").Value;
+				project.SendInfoToLog(strChatID, true);
+				
+				strFormat = String.Format("https://api.telegram.org/bot672782801:AAHeCwAAz93icLXzmvBu6X-80JDARGRdMKY/sendMessage?chat_id={0}&text={1}", strChatID, strMessage);
+				string strNotifucation = ZennoPoster.HttpGet(strFormat, "", "UTF-8", ZennoLab.InterfacesLibrary.Enums.Http.ResponceType.BodyOnly, 30000,"");
+			}
+			
+//			Tab1.Navigate("https://e.mail.ru/compose/");
+//			Tab1.WaitDownloading();
+//			Thread.Sleep(5000);
+//			
+//			int x=0; 
+//			
+//			HtmlElement elTo = Tab1.FindElementByXPath("//span[@class='js-input compose__labels__input']/following-sibling::textarea[@class='js-input compose__labels__input']", 0);
+//			for(x=0; x<3; x++){
+//				if(elTo.IsVoid){
+//					project.SendInfoToLog(@"Поле ввода ""Кому"" не обнаружено. Пауза 30 секунд. Асин: " + strAsinStandart, true);
+//					Thread.Sleep(30000);
+//
+//				}
+//				else{
+//					break;
+//				}
+//			}
+//			elTo.SetValue(strEmail, "Full", true);
+//			Thread.Sleep(2000);
+//			
+//			HtmlElement elSubject = Tab1.FindElementByXPath("//input[@class='b-input']", 0);
+//			for(x=0; x<3; x++){
+//				if(elSubject.IsVoid){
+//					project.SendInfoToLog(@"Поле ввода ""Tema"" не обнаружено. Пауза 15 секунд." + strAsinStandart, true);
+//					Thread.Sleep(15000);
+//				}
+//				else{
+//					break;
+//				}
+//			}
+//			elSubject.SetValue(strSendEmail, "Full", true);
+//			Thread.Sleep(2000);
+//			//HtmlElement elBody = Tab1.FindElementByXPath("//html/head", 0);
+//			//elBody.SetValue(strTraderNewPost, "Full", true);
+//			HtmlElement elSend = Tab1.FindElementByXPath("//div[@class='b-toolbar__btn b-toolbar__btn_ b-toolbar__btn_false js-shortcut']/span[@class='b-toolbar__btn__text']", 0);
+//			for(x=0; x<3; x++){
+//				if(elSend.IsVoid){
+//					project.SendInfoToLog(@"Кнопка ""Отправить"" не обнаружена. Пауза 15 секунд." + strAsinStandart, true);
+//					Thread.Sleep(15000);
+//				}
+//				else{
+//					break;
+//				}
+//			}
+//			elSend.Click();
+//			Tab1.WaitDownloading();
+//			Thread.Sleep(2000);
+//			HtmlElement elContinue = Tab1.FindElementByXPath("//button[@class='btn btn_stylish btn_main confirm-ok']/span[contains(text(),'Продолжить')]", 0);
+//			for(x=0; x<3; x++){
+//				if(elContinue.IsVoid){
+//					project.SendInfoToLog(@"Кнопка ""Продолжите"" не обнаружена. Пауза 15 секунд." + strAsinStandart, true);
+//					Thread.Sleep(15000);
+//				
+//				}
+//				else{
+//					break;
+//				}
+//			}
+//			elContinue.Click();
+//			Tab1.WaitDownloading();
+//			Thread.Sleep(2000);
+		
+			//сохранить профиль
+//			project.Profile.Save(project.Directory + @"\Вспомогательные файлы\tdfxy1uq@mail.ru.zpprofile", true, true, true);
+
+		}
+		else{
+			strFormat = String.Format("ASIN {0}: Изменений не обнаружено.", strAsinStandart);
+			project.SendInfoToLog(strFormat, true);
+
+		}
+	}
+}
+project.SendInfoToLog("Выполнение завершено!", true);
+
+//tblTemp.AddRow(new String[]{strProdUrl, strAsin, strProdName, strBrand, strBullet, strDescription, strCategory, strImg});
+//
