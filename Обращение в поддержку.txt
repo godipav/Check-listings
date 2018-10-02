@@ -1,16 +1,29 @@
+
+//че-то куда-то выносим)))) (по видео Сибборы)
+AmazonBot.Thread BotExe = new AmazonBot.Thread();
+BotExe.Project = project;
+
+//создаем объект класса Telegram и передаем ему BotExe(или как-то так))))
+AmazonBot.Telegram Telegram = new AmazonBot.Telegram(BotExe);
+
+SibboraHelper.WebHelper wHelper = new SibboraHelper.WebHelper(instance, project);
+
 IZennoTable tblWhatChanged = project.Tables["What_changed"];
 IZennoTable tblStandart = project.Tables["Standart"];
 IZennoTable tblBroukenListing = project.Tables["BroukenListing"];
 
+IZennoList lstTelegramUserID = project.Lists["TelegramUserID"];
 
+IZennoList lstBroukenListing = project.Lists["BroukenListing"];
+lstBroukenListing.Clear();
 
-
-IZennoList lstInterim = project.Lists["Interim"];
-lstInterim.Clear();
-
+string strAsin = "";
 string strWhatChanged = "";
 string strCellResult = "";
 string strFormat = "";
+string strNumberRow = "";
+string strCaseID = "";
+int intNumberRow = 0;
 
 
 string strProfilePath = project.Directory + @"\Вспомогательные файлы\amazon_profile.zpprofile";
@@ -38,11 +51,14 @@ while(tblBroukenListing.RowCount!=0){
 	string strOtherImageIssue = arrParameters[12];
 	string strAuthoritativeWebsite = arrParameters[13];
 	string strProofComment = arrParameters[14];
-	string strBulletStandartOne = arrParameters[15];
-	string strBulletStandartTwo = arrParameters[16];
-	string strBulletStandartThree = arrParameters[17];
-	string strBulletStandartFour = arrParameters[18];
-	string strBulletStandartFive = arrParameters[19];
+	string strSplitComment = arrParameters[15];
+	string strBulletStandartOne = arrParameters[16];
+	string strBulletStandartTwo = arrParameters[17];
+	string strBulletStandartThree = arrParameters[18];
+	string strBulletStandartFour = arrParameters[19];
+	string strBulletStandartFive = arrParameters[20];
+	
+	string strMessage = "";
 
 	project.SendInfoToLog(strAsinStandart);
 	project.SendInfoToLog(strTitleStandart);
@@ -61,6 +77,141 @@ while(tblBroukenListing.RowCount!=0){
 
 
 	Tab Tab1 = instance.ActiveTab;
+	if(listBroukenListing.Contains("Asin")){
+		if (File.Exists(strProfilePath)){
+			project.Profile.Load(strProfilePath);
+		}
+		else{
+			project.SendInfoToLog("Профиль не обнаружен.", true);
+			Tab1.Navigate("https://sellercentral.amazon.com/cu/contact-us");
+			Tab1.WaitDownloading();
+			Thread.Sleep(500);
+			project.SendInfoToLog("Необходима авторизация. Пауза три минуты.", true);
+			strMessage = "Необходима авторизация. Пауза три минуты.";
+			Telegram.Notification(strMessage);
+			Thread.Sleep(180000);
+			project.Profile.Save(strProfilePath);
+		}
+		
+		Tab1.Navigate("https://sellercentral.amazon.com/cu/contact-us");
+		Tab1.WaitDownloading();
+		Thread.Sleep(5000);
+		
+			//HtmlElement elSingIn = Tab1.FindElementByXPath("//button[@class='secondary']", 0);
+			HtmlElement elSingInSplit = Tab1.FindElementByXPath("//h1[@class='a-spacing-small' and contains(text(),'Sign in')]", 0);
+			if(!elSingInSplit.IsVoid){
+				project.SendInfoToLog("Необходима авторизация. Пауза три минуты.", true);
+				strMessage = "Необходима авторизация. Пауза три минуты.";
+				Telegram.Notification(strMessage);
+				Thread.Sleep(180000);
+				project.Profile.Save(strProfilePath);
+			}
+		
+//			//выбираем нужную категорию
+//			HtmlElement elRequestPageSplit = Tab1.FindElementByXPath("//span[contains(text(),'Request product page or category change')]", 0);
+//			elRequestPageSplit.Click();
+//			Tab1.WaitDownloading();
+//			Thread.Sleep(2000);
+			wHelper.ClickElementXPath(Tab1, true, null, "//span[contains(text(),'Request product page or category change')]", 0, EmulateKM: true);
+		
+			//закрываем всплывающее окно
+			HtmlElement elCloseSplit = Tab1.FindElementByXPath("//a[@id='spaui-close']", 0);
+			elCloseSplit.Click();
+			Tab1.WaitDownloading();
+			Thread.Sleep(2000);
+		
+			//выбираем раздел "Fix a product page"
+			HtmlElement elMarge = Tab1.FindElementByXPath("//div[@class='a-box-inner']/div/label/span[@class='a-label a-radio-label']", 1);
+		//	if(elFixPage.IsVoid){
+		//		continue;
+		//	}
+			elMarge.Click();
+			Tab1.WaitDownloading();
+			Thread.Sleep(2000);
+		
+		// выбираем Split
+		HtmlElement elSplit = Tab1.FindElementByXPath("//button[@id='split_button_merge_split_product-announce']", 0);
+		elSplit.Click();
+		Tab1.WaitDownloading();
+		Thread.Sleep(2000);
+
+		//берем асин из списка
+		strAsin = listBroukenListing[0];
+//		listBroukenListing.RemoveAt(0);
+		project.SendInfoToLog("Изменения в АСИНе: " + strAsin, true);
+
+		//вставляем ASIN 
+		HtmlElement elFieldOne = Tab1.FindElementByXPath("//input[@name='asin_split_1']", 0);
+		elFieldOne.SetValue(strAsin, "Full");
+		Thread.Sleep(500);
+		
+		//комментарий
+		HtmlElement elCommentSplit = Tab1.FindElementByXPath("//textarea[@id='merge_split_product_split_info']", 0);
+		elCommentSplit.SetValue(strSplitComment, "Full");
+		Thread.Sleep(500);
+		
+
+		//ставим галочку
+		HtmlElement elCheckboxSplit = Tab1.FindElementByXPath("//input[@id='biz_crit_flag_iidp_split_merge_split_product']", 0);
+		if(!elCheckboxSplit.IsVoid){
+	//		elCheckbox.Click();
+			Tab1.FullEmulationMouseMoveToHtmlElement(elCheckboxSplit);
+			instance.WaitFieldEmulationDelay();
+			elCheckboxSplit.RiseEvent("click", instance.EmulationLevel);
+			project.SendInfoToLog("Галочка поставлена.", true);
+		}
+		
+		
+		////нажимаем отправить
+		//HtmlElement elSend = Tab1.FindElementByXPath("//div[@id='merge_split_product_merge_submit_div']//button[contains(text(),'Send')]", 0);
+		//elSend.Click();
+		
+		//удаляем строку со значение "Asin"
+		listBroukenListing.RemoveAt(2);
+		
+		//проверяем на наличие ошибок
+		HtmlElement elErrorSplit = Tab1.FindElementByXPath("//div[@id='caseCreationError']//h4[@class='a-alert-heading']", 0);
+		if(!elErrorSplit.IsVoid){
+			project.SendInfoToLog("Отправляем уведомление в Телеграм. Введены некорректные данные: " + strAsin, true);
+		
+			strMessage = "Split. Введены некорректные данные: " + strAsin;
+			//отправка сообщения в телеграм всем пользователям в списке
+			Telegram.Notification(strMessage);
+			continue;
+		}
+		//берем порядковый номер асина в таблице Standart
+		strNumberRow = listBroukenListing[1];
+//		listBroukenListing.RemoveAt(0);
+		project.SendInfoToLog("Номер АСИНа в таблице: " + strNumberRow, true);
+		intNumberRow = Convert.ToInt32(strNumberRow);
+		
+		///берем CaseID
+		HtmlElement elCaseIdSplit = Tab1.FindElementByXPath("//div[@class='a-row']/span/a", 1);
+		if(!elCaseIdSplit.IsVoid){
+			strCaseID = elCaseIdSplit.GetAttribute("innerHtml");  // href - получить ссылку 
+			project.SendInfoToLog(strCaseID);
+			
+			project.SendInfoToLog("Отправляем уведомление в Телеграм. Создан кейс: " + strCaseID, true);
+		
+			strMessage = "Split. Создан кейс: " + strCaseID + " по АСИНу :" + strAsin;
+			//отправка сообщения в телеграм всем пользователям в списке
+			Telegram.Notification(strMessage);
+
+			tblStandart.SetCell(21, intNumberRow, DateTime.Now.ToString());
+			tblStandart.SetCell(22, intNumberRow, strCaseID);
+		}
+		else{
+			strMessage = "Split. Кейс не создан по неизвестной причине: " + strAsin;
+			//отправка сообщения в телеграм всем пользователям в списке
+			Telegram.Notification(strMessage);
+		}
+
+		project.Profile.Save(strProfilePath);
+		Thread.Sleep(20000);
+	}
+	
+	
+	
 
 	if (File.Exists(strProfilePath)){
 		project.Profile.Load(strProfilePath);
@@ -71,18 +222,23 @@ while(tblBroukenListing.RowCount!=0){
 		Tab1.WaitDownloading();
 		Thread.Sleep(500);
 		project.SendInfoToLog("Необходима авторизация. Пауза три минуты.", true);
+		strMessage = "Необходима авторизация. Пауза три минуты.";
+		Telegram.Notification(strMessage);
 		Thread.Sleep(180000);
 		project.Profile.Save(strProfilePath);
 	}
 
 	Tab1.Navigate("https://sellercentral.amazon.com/cu/contact-us");
 	Tab1.WaitDownloading();
-	Thread.Sleep(500);
+	Thread.Sleep(5000);
 
 	//HtmlElement elSingIn = Tab1.FindElementByXPath("//button[@class='secondary']", 0);
 	HtmlElement elSingIn = Tab1.FindElementByXPath("//h1[@class='a-spacing-small' and contains(text(),'Sign in')]", 0);
 	if(!elSingIn.IsVoid){
 		project.SendInfoToLog("Необходима авторизация. Пауза три минуты.", true);
+		strMessage = "Необходима авторизация. Пауза три минуты.";
+		Telegram.Notification(strMessage);
+
 		Thread.Sleep(180000);
 		project.Profile.Save(strProfilePath);
 	}
@@ -91,14 +247,14 @@ while(tblBroukenListing.RowCount!=0){
 	HtmlElement elRequestPage = Tab1.FindElementByXPath("//span[contains(text(),'Request product page or category change')]", 0);
 	elRequestPage.Click();
 	Tab1.WaitDownloading();
-	Thread.Sleep(500);
+	Thread.Sleep(2000);
 
 
 	//закрываем всплывающее окно
 	HtmlElement elClose = Tab1.FindElementByXPath("//a[@id='spaui-close']", 0);
 	elClose.Click();
 	Tab1.WaitDownloading();
-	Thread.Sleep(500);
+	Thread.Sleep(2000);
 
 	//выбираем раздел "Fix a product page"
 	HtmlElement elFixPage = Tab1.FindElementByXPath("//div[@class='a-box-inner']/div/label/span[@class='a-label a-radio-label']", 0);
@@ -110,21 +266,24 @@ while(tblBroukenListing.RowCount!=0){
 	Thread.Sleep(500);
 
 	//берем асин из списка
-	strWhatChanged = listBroukenListing[0];
-	listBroukenListing.RemoveAt(0);
-	project.SendInfoToLog("Изменения в АСИНе: " + strWhatChanged, true);
+	strAsin = listBroukenListing[0];
+//	listBroukenListing.RemoveAt(0);
+	project.SendInfoToLog("Изменения в АСИНе: " + strAsin, true);
 
 	//вставляем ASIN
 	HtmlElement elSearch = Tab1.FindElementByXPath("//input[@name='asinSearchTerm']", 0);
-	elSearch.SetValue(strWhatChanged, "Full");
-
+	elSearch.SetValue(strAsin, "Full");
+	Thread.Sleep(500);
+	
+	
 	HtmlElement elButtSearch = Tab1.FindElementByXPath("//button[@id='asinSearchButton-announce']", 0);
 	elButtSearch.Click();
 	Tab1.WaitDownloading();
 	Thread.Sleep(10000);
 
+
 	//узнием сколько строк в списке с измененными пунктами меню 
-	int intCount = listBroukenListing.Count;
+	int intCount = listBroukenListing.Count-2;
 	//string strCount = Convert.ToString(listBroukenListing.Count);
 	string strCount = intCount.ToString();
 	project.SendInfoToLog(strCount);
@@ -166,8 +325,8 @@ while(tblBroukenListing.RowCount!=0){
 
 		//подзадачи
 		//берем строку из списка с измененными пунктами меню 
-		strWhatChanged = listBroukenListing[0];
-		listBroukenListing.RemoveAt(0);
+		strWhatChanged = listBroukenListing[2];
+		listBroukenListing.RemoveAt(2);
 		project.SendInfoToLog(strWhatChanged);
 
 		//выбираем категорию
@@ -241,7 +400,7 @@ while(tblBroukenListing.RowCount!=0){
 				string strEnd = "</ul>";
 				//добавляем в список начальный теги
 				listTemp.Add(strStart);
-				int intCountBullits = 15;
+				int intCountBullits = 16;
 				//приклеиваем к буллетам теги и добавляем в список
 				for(int s=0; s<5; s++){
 					string strChek = tblBroukenListing.GetCell(intCountBullits, 1);
@@ -345,14 +504,14 @@ while(tblBroukenListing.RowCount!=0){
 			case "Packaging Dimensions":
 				project.SendInfoToLog("Меняем Packaging Dimensions", true);
 
-				strCellResult = tblStandart.GetCell(9, 0);
-				strCellResult = "start" + strCellResult + "end";
-				string strPackagingLength = Regex.Match(strCellResult, @"(?<=start)[\w\W]*?(?=\ x\ )").Value;
-				string strPackagingWidth = Regex.Match(strCellResult, @"(?<=\ x\ )[\w\W]*?(?=\ x\ )").Value;
-				string strPackagingHeight = Regex.Match(strCellResult, @"(?<=\ x\ ).*(?=\ )").Value;
+//				strCellResult = tblStandart.GetCell(9, 0);
+				strPackageDimensionsStandart = "start" + strPackageDimensionsStandart + "end";
+				string strPackagingLength = Regex.Match(strPackageDimensionsStandart, @"(?<=start)[\w\W]*?(?=\ x\ )").Value;
+				string strPackagingWidth = Regex.Match(strPackageDimensionsStandart, @"(?<=\ x\ )[\w\W]*?(?=\ x\ )").Value;
+				string strPackagingHeight = Regex.Match(strPackageDimensionsStandart, @"(?<=\ x\ ).*(?=\ )").Value;
 				strPackagingHeight = Regex.Match(strPackagingHeight, @"(?<=\ x\ ).*").Value;
 				string strPattern = String.Format(@"(?<={0}\ )[\w\W]*?(?=end)", strPackagingHeight);
-				string strPackagingDimensionsMeasure = Regex.Match(strCellResult, strPattern).Value;
+				string strPackagingDimensionsMeasure = Regex.Match(strPackageDimensionsStandart, strPattern).Value;
 
 				//вставляем в строку переменную с единицами изменения
 				strFormat = String.Format("//a[contains(@id,'dropdown') and contains(text(),'{0}')]", strPackagingDimensionsMeasure);
@@ -424,10 +583,10 @@ while(tblBroukenListing.RowCount!=0){
 	//			break;
 			case "Packaging Weight":
 				project.SendInfoToLog("Меняем Packaging Weight", true);
-
-				strCellResult = tblStandart.GetCell(11, 0);
-				string strPackagingWeight = Regex.Match(strCellResult, @".*(?=\ )").Value;
-				string strPackagingMeasure = Regex.Match(strCellResult, @"(?<=\ ).*").Value;
+	
+				string strPackagingWeight = Regex.Match(strShippingWeightStandart, @".*(?=\ )").Value;
+				
+				string strPackagingMeasure = Regex.Match(strShippingWeightStandart, @"(?<=\ ).*").Value;
 				
 				//вставляем в строку переменную с единицами изменения
 				strFormat = String.Format("//a[contains(@id,'dropdown') and contains(text(),'{0}')]", strPackagingMeasure);
@@ -508,28 +667,58 @@ while(tblBroukenListing.RowCount!=0){
 	}
 	
 	
-/////нажимаем отправить
-	//HtmlElement elSend = Tab1.FindElementByXPath("//div[@class='fake-list']//button[contains(text(),'Send')]", 0);
-	//elSend.Click();
+	//удаляем две первые строки из таблицы
+	tblBroukenListing.DeleteRow(0);
+	Thread.Sleep(2000);
+    tblBroukenListing.DeleteRow(0);
+	
+//	Thread.Sleep(60000);
+	
+	//нажимаем отправить
+	HtmlElement elSend = Tab1.FindElementByXPath("//div[@class='fake-list']//button[contains(text(),'Send')]", 0);
+	elSend.Click();
+	Tab1.WaitDownloading();
+	Thread.Sleep(2000);
 
-//	//удаляем две первые строки из таблицы
-//	tblBroukenListing.DeleteRow(0);
-//	Thread.Sleep(2000);
-//	tblBroukenListing.DeleteRow(0);
+	//проверяем на наличие ошибок
+	HtmlElement elErrorListing = Tab1.FindElementByXPath("//div[@id='caseCreationError']//h4[@class='a-alert-heading']", 0);
+	if(!elErrorListing.IsVoid){
+		project.SendInfoToLog("Отправляем уведомление в Телеграм. Введены некорректные данные: " + strAsin, true);
 	
+		strMessage = "Listing. Введены некорректные данные: " + strAsin;
+		//отправка сообщения в телеграм всем пользователям в списке
+		Telegram.Notification(strMessage);
+		continue;
+	}
+	//берем порядковый номер асина в таблице Standart
+	strNumberRow = listBroukenListing[1];
+	listBroukenListing.RemoveAt(1);
+	project.SendInfoToLog("Номер АСИНа в таблице: " + strNumberRow, true);
+	intNumberRow = Convert.ToInt32(strNumberRow);
 	
+	///берем CaseID
+	HtmlElement elCaseId = Tab1.FindElementByXPath("//div[@class='a-row']/span/a", 1);
+	if(!elCaseId.IsVoid){
+		strCaseID = elCaseId.GetAttribute("innerHtml");  // href - получить ссылку 
+		
+		project.SendInfoToLog("Отправляем уведомление в Телеграм. Создан кейс: " + strCaseID, true);
+		
+		strMessage = "Listing. Создан кейс: " + strCaseID + " по АСИНу :" + strAsin;
+		//отправка сообщения в телеграм всем пользователям в списке
+		Telegram.Notification(strMessage);
+		
+		tblStandart.SetCell(23, intNumberRow, DateTime.Now.ToString());
+		tblStandart.SetCell(24, intNumberRow, strCaseID);
+	}
+	else{
+		strMessage = "Listing. Кейс не создан по неизвестной причине: " + strAsin;
+		//отправка сообщения в телеграм всем пользователям в списке
+		Telegram.Notification(strMessage);
+		
+	}
 	project.Profile.Save(strProfilePath);
 	Thread.Sleep(20000);
 
 }
 
-//Title - 0
-//Brand - 1
-//Bullet points - 2
-//Images - 3
-//Product Description - 4
-//Item Dimensions - 5
-//Packaging Dimensions - 6
-//Item Weight - 7
-//Packaging Weight - 8
-//Other - 9
+project.SendInfoToLog("Гуд!)");
