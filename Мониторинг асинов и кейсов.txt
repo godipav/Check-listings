@@ -1,0 +1,1034 @@
+//че-то куда-то выносим)))) (по видео Сибборы)
+AmazonBot.MyThread BotExe = new AmazonBot.MyThread();
+BotExe.Project = project;
+BotExe.Instance = instance;
+
+//создаем объект класса Telegram и передаем ему BotExe(или как-то так))))
+AmazonBot.Telegram Telegram = new AmazonBot.Telegram(BotExe);
+
+AmazonBot.Upload Upload = new AmazonBot.Upload(BotExe);
+
+//Upload.UploadFile();
+
+
+SibboraHelper.WebHelper wHelper = new SibboraHelper.WebHelper(instance, project);
+
+//lists
+IZennoList lstProxy = project.Lists["Proxy"];
+IZennoList lstUserAgent = project.Lists["UserAgent"];
+IZennoList lstBullits = project.Lists["Bullits"];
+IZennoList lstChanges = project.Lists["Changes"];
+IZennoList lstTelegramUserID = project.Lists["TelegramUserID"];
+IZennoList lstPageNotFound = project.Lists["PageNotFound"];
+IZennoList lstUserProxy = project.Lists["UserProxy"];
+
+//tables
+IZennoTable tblStandart = project.Tables["Standart"];
+IZennoTable tblBroukenListing = project.Tables["BroukenListing"];
+IZennoTable tblUsers = project.Tables["Users"];
+
+//tblBroukenListing.Clear();
+
+//Создаем временный список listCatigories
+List<string> listSellers = new List<string>();
+List<string> listSellersUrl = new List<string>();
+
+Tab Tab1 = instance.ActiveTab;
+
+Random rndRandom = new Random();
+
+
+
+//проверяем не работает ли с данными другой шаблон
+string strStop = tblUsers.GetCell(2, 0);
+project.SendInfoToLog(strStop);
+//if(strStop=="Stop"){
+//	return "С данными работает другой шаблон!!!";
+//}
+////устанавливаем метку для других шаблонов
+//tblUsers.SetCell(2, 0, "Stop");
+
+//variables
+
+bool blnAppealForHelp = false;
+	
+
+for(int x=0; x<tblUsers.RowCount; x++){
+//		project.SendInfoToLog("отсечка: 0");
+	
+	string strAsin = "";
+	string strProdUrl = "";
+	string strBrand = "";
+	string strPrice = "x";
+	string strCategory = "";
+	string strProxy = "";
+	string strUserAgent = "";
+	string strGetResultBody = "";
+	string strProdName = "";
+	string strCustomerReviews = "";
+	string strBullet = "";
+	string strSellersCount = "x";
+	string strDescription = "";
+	string strImg = "";
+	string strFormat = "";
+	string strParameters = "";
+	string strPackageDimensions = "";
+	string strProductDimensions = "";
+	string strItemWeight = "";
+	string strShippingWeight = "";
+	string strCaseStatus = "";
+	string strMessage = "";
+	string strNotifucation = "";
+
+	
+	string strUser = tblUsers.GetCell(0, x);
+	project.SendInfoToLog(strUser, true);
+	
+	string strProfilePath = String.Format(@"{0}\{1}\{2}\{3}", project.Directory, "Вспомогательные файлы", strUser, "amazon_profile.zpprofile");
+	project.SendInfoToLog(strFilePath, true);
+	
+	string strFilePath = String.Format(@"{0}\{1}\{2}\{3}.txt", project.Directory, "Вспомогательные файлы", strUser, "TelegramUserID");
+	lstTelegramUserID.Bind(strFilePath);
+//		project.SendInfoToLog(strFilePath, true);
+
+	
+	strFilePath = String.Format(@"{0}\{1}\{2}\{3}.txt", project.Directory, "Вспомогательные файлы", strUser, "PageNotFound");
+	lstPageNotFound.Bind(strFilePath);
+	
+	
+	strFilePath = String.Format(@"{0}\{1}\{2}\{3}.xlsx", project.Directory, "Вспомогательные файлы", strUser, "Standart");
+	tblStandart.Bind(strFilePath);
+//		project.SendInfoToLog(strFilePath, true);
+
+	strFilePath = String.Format(@"{0}\{1}\{2}\{3}.xlsx", project.Directory, "Вспомогательные файлы", strUser, "BroukenListing");
+	tblBroukenListing.Bind(strFilePath);
+//		project.SendInfoToLog(strFilePath, true);
+	
+	strFilePath = String.Format(@"{0}\{1}\{2}\{3}.xlsx", project.Directory, "Вспомогательные файлы", strUser, "UserProxy");
+	lstUserProxy.Bind(strFilePath);
+	project.SendInfoToLog(strFilePath, true);
+	
+	string strLink = tblUsers.GetCell(1, x);
+	project.SendInfoToLog(strLink, true);
+	
+	
+
+	for(int a=0; a<tblStandart.RowCount; a++){
+	project.SendInfoToLog(tblStandart.RowCount.ToString(), true);
+//		project.SendInfoToLog("отсечка: 1");
+		
+		
+		bool blnAsin = false;
+		bool blnBrand = false;
+		bool blnCategory = false;
+		bool blnProdName = false;
+		bool blnBullet = false;
+		bool blnSellersCount = false;
+		bool blnCustomerReviews = false;
+		bool blnDescription = false;
+		bool blnImg = false;
+		bool blSorry = false;
+		bool blnPackageDimensions = false;
+		bool blnProductDimensions = false;
+		bool blnItemWeight = false;
+		bool blnShippingWeight = false;
+		
+		bool blnCaseSplit = true;
+		bool blnCaseListing = true;
+		
+		
+		string[] arrParameters = tblStandart.GetRow(a).ToArray();
+		string strAsinStandart = arrParameters[1];
+		string strProdNameStandart = arrParameters[2];
+		string strBrandStandart = arrParameters[3];
+		string strCustomerReviewsStandart = arrParameters[4];
+		string strPriceStandart = arrParameters[5];
+		string strBulletStandart = arrParameters[6];
+		string strSellersCountStandart = arrParameters[7];
+		string strDescriptionStandart = arrParameters[8];
+		string strCategoryStandart = arrParameters[9];
+		
+		string strImgStandart = arrParameters[10];
+		string strProductDimensionsStandart = arrParameters[11];
+		string strPackageDimensionsStandart = arrParameters[12];
+		string strItemWeightStandart = arrParameters[13];
+		string strShippingWeightStandart = arrParameters[14];
+		string strCaseIDTimeSplit = arrParameters[24];
+		string strCaseIDStatusSplit = arrParameters[25];
+		
+		string strCaseIDTimeListing = arrParameters[26];
+		string strCaseIDStatusListing = arrParameters[27];
+		
+		project.SendInfoToLog("Берем АСИН: " + strAsinStandart, true);
+		
+		strBrandStandart = strBrandStandart.Replace(Convert.ToString((char)13), String.Empty);
+	//		lstInterim.Add(strBrandStandart);
+		
+		project.SendInfoToLog(strAsinStandart);
+		project.SendInfoToLog(strProdNameStandart);
+		project.SendInfoToLog(strBrandStandart);
+		project.SendInfoToLog(strBulletStandart);
+		project.SendInfoToLog(strDescriptionStandart);
+		project.SendInfoToLog(strCategoryStandart);
+		project.SendInfoToLog(strImgStandart);
+		project.SendInfoToLog(strProductDimensionsStandart);
+		project.SendInfoToLog("Package Dimensions Standart: " + strPackageDimensionsStandart);
+		project.SendInfoToLog(strItemWeightStandart);
+		project.SendInfoToLog(strShippingWeightStandart);
+		
+		project.SendInfoToLog(tblStandart.RowCount.ToString());
+		
+		instance.ClearCache();
+		instance.ClearCookie();
+		
+		
+		string strProxy = lstUserProxy[0];
+		string strUserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36 OPR/47.0.2631.80";
+		
+		instance.SetProxy(strProxy, false);
+		project.Profile.UserAgent = strUserAgent;
+		
+		
+		if(strCaseIDStatusSplit!="x"){
+			project.SendInfoToLog(strProfilePath);
+			
+			if (File.Exists(strProfilePath)){
+				project.SendInfoToLog(strProfilePath);
+				project.Profile.Load(strProfilePath);
+			}
+			else{
+				project.SendInfoToLog("Профиль не обнаружен. Необходима авторизация. Отправляем уведомление в телеграм.", true);
+				Tab1.Navigate("https://sellercentral.amazon.com");
+			    Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				
+				strMessage = "Необходима авторизация.";
+				//отправка сообщения в телеграм всем пользователям в списке
+				Telegram.Notification(strMessage);
+				
+				Thread.Sleep(180000);
+				project.Profile.Save(strProfilePath);
+			}
+				project.Profile.Load(strProfilePath);
+			
+			Tab1.Navigate("https://sellercentral.amazon.com");
+			Tab1.WaitDownloading();
+			Thread.Sleep(2000);
+			
+			strFormat = String.Format("https://sellercentral.amazon.com{0}", strLink);
+			project.SendInfoToLog(strFormat, true);
+
+			Tab1.Navigate(strFormat);
+			Tab1.WaitDownloading();
+			Thread.Sleep(2000);
+			
+			Tab1.Navigate("https://sellercentral.amazon.com/gp/case-dashboard/lobby.html?ref_=ag_caselog_shel_xx");
+		    Tab1.WaitDownloading();
+			Thread.Sleep(2000);
+			
+			HtmlElement elSingIn = Tab1.FindElementByXPath("//h1[@class='a-spacing-small' and contains(text(),'Sign in')]", 0);
+			if(!elSingIn.IsVoid){
+				project.SendInfoToLog("Необходима авторизация. Отправляем уведомление в телеграм.", true);
+				
+				strMessage = "Необходима авторизация.";
+				//отправка сообщения в телеграм всем пользователям в списке
+				Telegram.Notification(strMessage);
+				
+				Thread.Sleep(180000);
+				project.Profile.Save(strProfilePath);
+			}
+
+			
+			//если юзер из таблицы не совпадает с юзером на которого должен быть переход
+			HtmlElement elUserName = Tab1.FindElementByXPath("//div[contains(@class,'picker-bold')]", 0);
+			if(strUser!=elUserName.GetAttribute("innerHtml")){
+				strMessage = String.Format("Переход на нужного юзера не совершен. Юзер из таблицы: {0}. Юзер со страницы: {1}.", strUser, elUserName.GetAttribute("innerHtml"));
+				strFormat = String.Format("https://api.telegram.org/bot672782801:AAHeCwAAz93icLXzmvBu6X-80JDARGRdMKY/sendMessage?chat_id=233580099&text={0}", strMessage);
+				strNotifucation = ZennoPoster.HttpGet(strFormat, "", "UTF-8", ZennoLab.InterfacesLibrary.Enums.Http.ResponceType.BodyOnly, 30000,"");
+				break;
+			}
+			
+
+			//берем статус кейса
+			strFormat = String.Format("//tr[@id='case_row_{0}']/td", strCaseIDStatusSplit);
+			HtmlElement elCaseStatus = Tab1.FindElementByXPath(strFormat, 2);
+			strCaseStatus = elCaseStatus.GetAttribute("innerHtml");
+			project.SendInfoToLog(strCaseStatus, true);
+			
+			if(strCaseStatus.Contains("Pending")){ 
+				project.SendInfoToLog("Split. Кейс: " + strCaseIDStatusSplit + " не обработан. Берем следующий АСИН.", true);
+				
+				blnCaseSplit = false;
+				
+				DateTime dtOld = Convert.ToDateTime(strCaseIDTimeSplit);
+				DateTime dtNew = DateTime.Now;
+	//			project.SendInfoToLog(dtNew.ToString());
+				TimeSpan tsSpan = dtNew - dtOld;
+				double dblSeconds = tsSpan.TotalSeconds;
+			
+				double dblMinutes = dblSeconds/60;
+				project.SendInfoToLog("Кейс в статусе Pending: " + dblMinutes.ToString() + " минут.", true);
+				if(dblSeconds>3000){
+					strMessage = "Split. Кейс: " + strCaseIDStatusSplit + " в статусе Pending более 50-ти минут.";
+					//отправка сообщения в телеграм всем пользователям в списке
+					Telegram.Notification(strMessage);
+				}
+			}
+			else if(strCaseStatus.Contains("Needs Your Attention")){
+				blnCaseSplit = false;
+				project.SendInfoToLog("Split. Кейс: " + strCaseIDStatusSplit + " требует вмешательства. Берем следующий АСИН.", true);
+				
+				project.SendInfoToLog("Отправляем уведомление в телеграм.", true);
+
+				strMessage = "Split. Кейс: " + strCaseIDStatusSplit + " со статусом Needs Your Attention.";
+				//отправка сообщения в телеграм всем пользователям в списке
+				Telegram.Notification(strMessage);
+			}
+			else if(strCaseStatus.Contains("Answered")){
+				project.SendInfoToLog("Split. Кейс: " + strCaseIDStatusSplit + " закрыт. Удаляем номер кейса из таблицы.", true);
+				tblStandart.SetCell(24, a, "x");
+				tblStandart.SetCell(25, a, "x");
+				
+			}
+		}
+		if(strCaseIDStatusListing!="x"){
+			
+			if (File.Exists(strProfilePath)){
+				project.Profile.Load(strProfilePath);
+			}
+			else{
+				project.SendInfoToLog("Профиль не обнаружен. Необходима авторизация. Отправляем уведомление в телеграм.", true);
+				
+				Tab1.Navigate("https://sellercentral.amazon.com");
+				Tab1.WaitDownloading();
+				Thread.Sleep(2000);
+				
+				strMessage = "Необходима авторизация.";
+				//отправка сообщения в телеграм всем пользователям в списке
+				Telegram.Notification(strMessage);
+				
+				Thread.Sleep(180000);
+				project.Profile.Save(strProfilePath);
+			}
+			
+			Tab1.Navigate("https://sellercentral.amazon.com");
+			Tab1.WaitDownloading();
+			Thread.Sleep(2000);
+			
+			strFormat = String.Format("https://sellercentral.amazon.com{0}", strLink);
+			project.SendInfoToLog(strFormat, true);
+
+			Tab1.Navigate(strFormat);
+			Tab1.WaitDownloading();
+			Thread.Sleep(2000);
+			
+			Tab1.Navigate("https://sellercentral.amazon.com/gp/case-dashboard/lobby.html?ref_=ag_caselog_shel_xx");
+		    Tab1.WaitDownloading();
+			Thread.Sleep(2000);
+			
+			HtmlElement elSingIn = Tab1.FindElementByXPath("//h1[@class='a-spacing-small' and contains(text(),'Sign in')]", 0);
+			if(!elSingIn.IsVoid){
+				project.SendInfoToLog("Необходима авторизация. Отправляем уведомление в телеграм.", true);
+				
+				strMessage = "Необходима авторизация.";
+				//отправка сообщения в телеграм всем пользователям в списке
+				Telegram.Notification(strMessage);
+				
+				Thread.Sleep(180000);
+				project.Profile.Save(strProfilePath);
+			}
+			
+			
+			//если юзер из таблицы не совпадает с юзером на которого должен быть переход
+			HtmlElement elUserName = Tab1.FindElementByXPath("//div[contains(@class,'picker-bold')]", 0);
+			if(strUser!=elUserName.GetAttribute("innerHtml")){
+				strMessage = String.Format("Переход на нужного юзера не совершен. Юзер из таблицы: {0}. Юзер со страницы: {1}.", strUser, elUserName.GetAttribute("innerHtml"));
+				strFormat = String.Format("https://api.telegram.org/bot672782801:AAHeCwAAz93icLXzmvBu6X-80JDARGRdMKY/sendMessage?chat_id=233580099&text={0}", strMessage);
+				strNotifucation = ZennoPoster.HttpGet(strFormat, "", "UTF-8", ZennoLab.InterfacesLibrary.Enums.Http.ResponceType.BodyOnly, 30000,"");
+				break;
+			}
+	
+
+			//берем статус кейса
+			strFormat = String.Format("//tr[@id='case_row_{0}']/td", strCaseIDStatusListing);
+			HtmlElement elCaseStatus = Tab1.FindElementByXPath(strFormat, 2);
+			strCaseStatus = elCaseStatus.GetAttribute("innerHtml");
+			project.SendInfoToLog(strCaseStatus, true);
+			
+			if(strCaseStatus.Contains("Pending")){ 
+				project.SendInfoToLog("Listing. Кейс: " + strCaseIDStatusListing + " не обработан. Берем следующий АСИН.", true);
+				
+				blnCaseListing = false;
+	//			continue;
+				
+				DateTime dtOld = Convert.ToDateTime(strCaseIDTimeListing);
+				DateTime dtNew = DateTime.Now;
+	//			project.SendInfoToLog(dtNew.ToString());
+				TimeSpan tsSpan = dtNew - dtOld;
+				double dblSeconds = tsSpan.TotalSeconds;
+			
+				double dblMinutes = dblSeconds/60;
+				project.SendInfoToLog("Кейс в статусе Pending: " + dblMinutes.ToString() + " минут.", true);
+				project.SendInfoToLog(dblSeconds.ToString());
+				if(dblSeconds>3000){
+					strMessage = "Listing. Кейс: " + strCaseIDStatusListing + " в статусе Pending более 50-ти минут.";
+					//отправка сообщения в телеграм всем пользователям в списке
+					Telegram.Notification(strMessage);
+				}
+			}
+			else if(strCaseStatus.Contains("Needs Your Attention")){
+				blnCaseListing = false;
+				project.SendInfoToLog("Listing. Кейс : " + strCaseIDStatusListing + " требует вмешательства. Берем следующий АСИН.", true);
+				
+				project.SendInfoToLog("Отправляем уведомление в телеграм.", true);
+				
+				strMessage = "Listing. Кейс : " + strCaseIDStatusListing + " со статусом Needs Your Attention.";
+				//отправка сообщения в телеграм всем пользователям в списке
+				Telegram.Notification(strMessage);
+			}
+			else if(strCaseStatus.Contains("Answered")){
+				project.SendInfoToLog("Listing. Кейс: " + strCaseIDStatusListing + " закрыт. Удаляем номер кейса из таблицы.", true);
+				tblStandart.SetCell(26, a, "x");
+				tblStandart.SetCell(27, a, "x");
+				
+			}
+			
+		//	//второй вариант - пройти по ссылке с idшником
+		//	//получаем елемент
+		//	HtmlElement elCaseStatus = Tab1.FindElementByXPath("//div[@class='a-column a-span8']", 0);
+		//	string strCaseStatus = elCaseStatus.GetAttribute("innerHtml");
+
+		}
+		
+		if(blnCaseSplit==false&&blnCaseListing==false){
+			continue;	
+		}
+	//	//берем Асин из таблицы
+	//	strAsinStandart = tblStandart.GetCell(1, a);
+		
+
+
+
+//		//берем из списка прокси и ЮА
+//		lock(SyncObjects.ListSyncer){
+//			strProxy = lstProxy[0];
+//			project.SendInfoToLog(strProxy, true);
+//			lstProxy.RemoveAt(0);
+//			lstProxy.Add(strProxy);
+//		}
+//		//берем из списка  ЮА
+//		lock(SyncObjects.ListSyncer){
+//			strUserAgent = lstUserAgent[0];
+//			lstUserAgent.RemoveAt(0);
+//			lstUserAgent.Add(strUserAgent);
+//		}
+
+		//берем ссылку на товар
+		strProdUrl = "https://www.amazon.com/dp/" + strAsinStandart;
+		
+		lstChanges.Clear();
+		
+		for(int d=0; d<5; d++){
+			//берем прокси и ЮА
+			string strDBConnString = "database=admin_proxy_servers;user id=admin_AMZ_Bot;password=zoNov19SxX;persistsecurityinfo=True;server=195.28.182.181";
+			string strSQLQuery = String.Format("SELECT * FROM Proxy WHERE id={0}", rndRandom.Next(0, 49));		
+			lock(SyncObjects.ListSyncer){	
+			string strQueryResult = ZennoPoster.Db.ExecuteQuery(strSQLQuery, null, ZennoLab.InterfacesLibrary.Enums.Db.DbProvider.MySqlClient, strDBConnString, " | ", Environment.NewLine);
+				project.SendInfoToLog(strQueryResult);
+				strProxy = Regex.Match(strQueryResult, @"http[\w\W]*?(?=\ )").Value;
+				project.SendInfoToLog(strProxy.Substring(25));
+				
+				strUserAgent = Regex.Match(strQueryResult, @"(?<=\|\ )Mozilla[\w\W]*").Value;
+				project.SendInfoToLog(strUserAgent);
+				
+			}
+			
+		//	project.SendInfoToLog(strProdUrl, true);
+		//	instance.SetProxy(strProxy, false);
+		//	Tab1.Navigate("https://whoer.net/");
+
+
+//			strProxy = "http://usa90080904:Ggp1RBAKEp@192.3.61.156:7384";
+//			strUserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36 OPR/47.0.2631.80";
+//			
+			
+			
+		    project.SendInfoToLog("Получаем данные о листинге.", true);
+			//берем данные о товаре гет запросом
+			strGetResultBody = ZennoPoster.HttpGet(strProdUrl, strProxy, "UTF-8", ZennoLab.InterfacesLibrary.Enums.Http.ResponceType.BodyOnly, 30000, "", strUserAgent);
+			project.Variables["html_body"].Value = strGetResultBody;
+			project.SendInfoToLog(strGetResultBody);
+			
+			
+			//проверка прокси на работоспособность
+			if(strGetResultBody!=""){
+				break;
+			}
+			else if(strGetResultBody==""&&d==4){
+				project.SendWarningToLog("Прокси не рабочие!!!", true);
+				project.SendInfoToLog("Ответ Амазона: " + strGetResultBody, true);
+				strMessage = "Прокси не рабочие!!!";
+				strFormat = String.Format("https://api.telegram.org/bot672782801:AAHeCwAAz93icLXzmvBu6X-80JDARGRdMKY/sendMessage?chat_id=233580099&text={0}", strMessage);
+				strNotifucation = ZennoPoster.HttpGet(strFormat, "", "UTF-8", ZennoLab.InterfacesLibrary.Enums.Http.ResponceType.BodyOnly, 30000,"");
+				return null;
+			}
+		}
+		
+		
+		//проверка есть ли такая страница
+		if(strGetResultBody.Contains("Sorry! We couldn't find that page. Try searching or go to Amazon's home page.")){
+			project.SendWarningToLog("Sorry!" + "  " + strAsinStandart, true);
+			project.SendInfoToLog("Ответ Амазона: " + strGetResultBody, true);
+			
+			if(lstPageNotFound.Contains(strAsinStandart)){
+				project.SendInfoToLog("Берем следующий асин.", true);
+				continue;
+			}
+			else{
+				project.SendInfoToLog("Sorry! Отправляем уведомление в телеграмм.", true);
+				
+				lstPageNotFound.Add(strAsinStandart);
+				strMessage = String.Format("ASIN {0}: Page deleted.", strAsinStandart);
+				Telegram.Notification(strMessage);
+			}
+//			lstChanges.Add(strFormat);
+//			blSorry = true;
+		}
+		else{
+			project.SendInfoToLog("Страница восстановлена.", true);
+			
+			if(lstPageNotFound.Contains(strAsinStandart)){
+				for(int k=0; k<lstPageNotFound.Count; k++){
+					string strDeleteAsin = lstPageNotFound[k];
+					if(strDeleteAsin==strAsinStandart){
+						project.SendInfoToLog("Удаляем Асин из списка PageNotFound.", true);
+						
+						lstPageNotFound.RemoveAt(k);
+					}
+				}
+			}
+		}
+		
+		if(strGetResultBody.Contains("we just need to make sure you're not a robot")){
+			project.SendWarningToLog("Амазон палит прокси!!!", true);
+			project.SendInfoToLog("Ответ Амазона: " + strGetResultBody, true);
+			strMessage = "Амазон палит прокси!!!";
+			strFormat = String.Format("https://api.telegram.org/bot672782801:AAHeCwAAz93icLXzmvBu6X-80JDARGRdMKY/sendMessage?chat_id=233580099&text={0}", strMessage);
+			strNotifucation = ZennoPoster.HttpGet(strFormat, "", "UTF-8", ZennoLab.InterfacesLibrary.Enums.Http.ResponceType.BodyOnly, 30000,"");
+			return null;
+		}
+		if(strGetResultBody.Contains("Sorry! Something went wrong on our end.")){
+			project.SendWarningToLog("Проблемы на стороне Амазон!", true);
+			project.SendInfoToLog("Ответ Амазона: " + strGetResultBody, true);
+			strMessage = "Проблемы на стороне Амазон!";
+			strFormat = String.Format("https://api.telegram.org/bot672782801:AAHeCwAAz93icLXzmvBu6X-80JDARGRdMKY/sendMessage?chat_id=233580099&text={0}", strMessage);
+			strNotifucation = ZennoPoster.HttpGet(strFormat, "", "UTF-8", ZennoLab.InterfacesLibrary.Enums.Http.ResponceType.BodyOnly, 30000,"");			
+			return null;
+		}
+		if(strGetResultBody.Contains("To discuss automated access to Amazon")){
+			project.SendWarningToLog("Неизвестная ошибка!", true);
+			project.SendInfoToLog("Ответ Амазона: " + strGetResultBody, true);
+			strMessage = "Кривой ответ от Амазон! Неизвестная ошибка!";
+			strFormat = String.Format("https://api.telegram.org/bot672782801:AAHeCwAAz93icLXzmvBu6X-80JDARGRdMKY/sendMessage?chat_id=233580099&text={0}", strMessage);
+			strNotifucation = ZennoPoster.HttpGet(strFormat, "", "UTF-8", ZennoLab.InterfacesLibrary.Enums.Http.ResponceType.BodyOnly, 30000,"");
+			return null;
+		}
+		
+				
+//		return "ок";
+//		else{
+			//берем название товара
+			strProdName = Regex.Match(strGetResultBody, @"(?<=\ class=""a-size-large"">)[\w\W]*?(?=</span>)").Value;
+			strProdName = System.Net.WebUtility.HtmlDecode(strProdName);
+			strProdName = strProdName.Trim();
+			project.SendInfoToLog("Название товара Standsrt: " + strProdNameStandart, true);
+			project.SendInfoToLog("Название товара NewData: " + strProdName, true);
+			//lstTest.Add(strProdName);
+
+			//удаляем пробелы и все символы кроме букв и цифр
+			string strProdNameToLower = Regex.Replace(strProdName, @"[^a-zA-ZА-Яа-я0-9\s]", "").Replace(" ", "").ToLower();
+			//project.SendInfoToLog(strProdNameToLower);
+
+
+			//берем бренд
+			if(strGetResultBody.Contains("<a id=\"bylineInfo\" class=\"a-link-normal\" href=")){
+				strBrand = Regex.Match(strGetResultBody, @"(?<=<a\ id=""bylineInfo""\ class=""a-link-normal""\ href="").*(?=</a>)").Value;
+				strBrand = strBrand.Trim();
+				strBrand = Regex.Match(strBrand, @"(?<="">).*").Value;
+			}
+			else{
+				strBrand = Regex.Match(strGetResultBody, @"(?<=<a\ id=""brand""\ class=""a-link-normal""\ href=)[\w\W]*?(?=</a>)").Value;
+				//project.SendInfoToLog(strBrand);
+				strBrand = strBrand.Trim();
+				//project.SendInfoToLog(strBrand);
+				strBrand = Regex.Match(strBrand, @"(?<=keywords=)[\w\W]*?(?="">)").Value;
+			}
+	//		lstInterim.Add(strBrand);
+			project.SendInfoToLog("Бренд Standsrt: " + strBrandStandart, true);
+			project.SendInfoToLog("Бренд NewData: " + strBrand, true);
+
+			lstBullits.Clear();
+			
+			//берем количество отзывов
+			strCustomerReviews = Regex.Match(strGetResultBody, @"(?<=>).*(?=customer\ reviews</span>)").Value;
+			strCustomerReviews = System.Net.WebUtility.HtmlDecode(strCustomerReviews);
+			strCustomerReviews = strCustomerReviews.Trim();
+			project.SendInfoToLog("Кол-во отзывов Standsrt: " + strCustomerReviewsStandart, true);
+			project.SendInfoToLog("Кол-во отзывов NewData: " + strCustomerReviews, true);
+			
+			//берем цену
+			strPrice = Regex.Match(strGetResultBody, @"(?<=class=""a-size-medium\ a-color-price"">\$)[\w\W]*?(?=</span>)").Value;
+			strPrice = System.Net.WebUtility.HtmlDecode(strPrice);
+			strPrice = strPrice.Trim().Replace(".", ",");
+			project.SendInfoToLog(strPrice);
+
+			//берем буллиты
+			strBullet = Regex.Match(strGetResultBody, @"(?<=<div\ id=""feature-bullets"")[\w\W]*?(?=</ul>)").Value;
+		//	project.SendInfoToLog(strGetResultBody);
+			MatchCollection mthRegexResults = Regex.Matches(strBullet, @"(?<=<span\ class=""a-list-item"">)[\w\W]*?(?=</span></li>)");
+			foreach(Match mthResult in mthRegexResults){
+				strBullet = mthResult.Value;
+				strBullet = System.Net.WebUtility.HtmlDecode(strBullet);
+				strBullet = strBullet.Trim();
+				if(!strBullet.Contains("</")){
+					lstBullits.Add(strBullet);
+					project.SendInfoToLog("Буллит:" + strBullet);
+				}
+			}
+
+
+			//объединение элементов списка в одну строку
+			string strListToStringDelimiter = Environment.NewLine;
+			strBullet = String.Join(strListToStringDelimiter, lstBullits);
+			project.SendInfoToLog("Все буллиты Standsrt:" + strBulletStandart, true);
+			project.SendInfoToLog("Все буллиты NewData:" + strBullet, true);
+
+
+			//Берем количество продавцов
+			strSellersCount = Regex.Match(strGetResultBody, @"(?<=\().*(?=\)\ from)").Value;
+			strSellersCount = System.Net.WebUtility.HtmlDecode(strSellersCount);
+			strSellersCount = strSellersCount.Trim();
+			project.SendInfoToLog("Количество продавцов Standsrt:" + strSellersCountStandart, true);
+			project.SendInfoToLog("Количество продавцов NewData:" + strSellersCount, true);
+			
+		//берем описание
+		strDescription = Regex.Match(strGetResultBody, @"(?<=<div\ id=""productDescription"")[\w\W]*?</p>").Value;
+		strDescription = Regex.Match(strDescription, @"(?<=<p>)[\w\W]*?(?=</p>)").Value;
+	//	project.SendInfoToLog(strDescription);
+		if(strDescription==""){
+			strDescription = Regex.Match(strGetResultBody, @"(?<=<div\ class=""celwidget\ aplus-module\ 3p-module-b""\ cel_widget_id=""aplus-3p-module-b"">)[\w\W]*(?=<div\ id=""dpx-window-blind-disclaimer_feature_div"">)").Value;
+		}
+	//	project.SendInfoToLog(strDescription);
+		//удаляем символы HTML
+		strDescription = System.Net.WebUtility.HtmlDecode(strDescription);
+	//	project.SendInfoToLog(strDescription);
+		
+		//удаляем теги HTML
+		strDescription = Regex.Replace(strDescription, @"<[^>]+>", string.Empty);
+	//	project.SendInfoToLog(strDescription);
+		
+		strDescription = strDescription.Trim();
+	//	project.SendInfoToLog(strDescription);
+		
+		//удаляем пробелы внутри строки
+		strDescription = Regex.Replace(strDescription, @"\s+", " ");
+		project.SendInfoToLog("Описание Standart: " + strDescriptionStandart, true);
+		project.SendInfoToLog("Описание NewData: " + strDescription, true);
+
+		//берем категорию
+		strCategory = Regex.Match(strGetResultBody, @"(?<=\ in\ ).*?(?=\ \(<a\ href=)").Value;
+		strCategory = strCategory.Trim();
+		project.SendInfoToLog("Категория Standart: " + strCategoryStandart, true);
+		project.SendInfoToLog("Категория NewData: " + strCategory, true);
+
+		//парсим фото
+		strImg = Regex.Match(strGetResultBody, @"(?<=data-old-hires=)[\w\W]*?(?=</div>)").Value;
+		strImg = Regex.Match(strImg, @"https:[\w\W]*?jpg").Value;	
+				
+		project.SendInfoToLog("Images: " + strImg + "  " + strAsin, true);
+		
+		project.SendInfoToLog("Фото Standart: " + strImgStandart, true);
+		project.SendInfoToLog("Фото NewData: " + strImg, true);
+
+		//определяем тип страницы
+		bool blnProductInformation = false;
+		bool blnProductDetails = false;
+		
+		MatchCollection mthDetailsCollection = Regex.Matches(strGetResultBody, @"(?<=<h2)[\w\W]*?(?=</h2>)");
+		foreach(Match mthDetails in mthDetailsCollection){
+			string strDetails = mthDetails.Value;
+			if(strDetails.Contains("Product information")){
+				blnProductInformation = true;
+				
+			}
+			else if(strDetails.Contains("Product details")){
+				blnProductDetails = true;
+				
+			}
+		}
+		
+		//забираем инфо
+		if(blnProductInformation==true){
+			
+			//берем АСИН
+			MatchCollection mthRegexParameters = Regex.Matches(strGetResultBody, @"(?<=<th\ class=""a-color-secondary\ a-size-base\ prodDetSectionEntry"">)[\w\W]*?(?=</tr>)");
+			foreach(Match mthParameters in mthRegexParameters){
+				strParameters = mthParameters.Value;
+				if(strParameters.Contains("ASIN")){
+					strAsin = Regex.Match(strParameters, @"(?<=<td\ class=""a-size-base"">)[\w\W]*?(?=</td>)").Value;
+					strAsin = strAsin.Trim();
+					project.SendInfoToLog("Асин Standart: " + strAsinStandart, true);
+					project.SendInfoToLog("Асин NewData: " + strAsin, true);
+				}
+				if(strParameters.Contains("Package Dimensions")){
+					strPackageDimensions = Regex.Match(strParameters, @"(?<=<td\ class=""a-size-base"">)[\w\W]*?(?=</td>)").Value;
+					strPackageDimensions = strPackageDimensions.Trim();
+					project.SendInfoToLog("Package Dimensions Standart: " + strPackageDimensionsStandart, true);
+					project.SendInfoToLog("Package Dimensions NewData: " + strPackageDimensions, true);
+
+				}
+				
+				if(strParameters.Contains("Product Dimensions")){
+					strProductDimensions = Regex.Match(strParameters, @"(?<=<td\ class=""a-size-base"">)[\w\W]*?(?=</td>)").Value;
+					strProductDimensions = strProductDimensions.Trim();
+					project.SendInfoToLog("Product Dimensions Standart: " + strProductDimensionsStandart, true);
+					project.SendInfoToLog("Product Dimensions NewData: " + strProductDimensions, true);
+				}
+
+
+				if(strParameters.Contains("Item Weight")){
+					strItemWeight = Regex.Match(strParameters, @"(?<=<td\ class=""a-size-base"">)[\w\W]*?(?=</td>)").Value;
+					strItemWeight = strItemWeight.Trim();
+					project.SendInfoToLog("Item Weight Standart: " + strItemWeightStandart, true);
+					project.SendInfoToLog("Item Weight NewData: " + strItemWeight, true);
+
+				}
+
+				if(strParameters.Contains("Shipping Weight")){
+					strShippingWeight = Regex.Match(strParameters, @"(?<=<td\ class=""a-size-base"">)[\w\W]*?(?=</td>)").Value;
+					strShippingWeight = strShippingWeight.Trim();
+					strShippingWeight = Regex.Match(strShippingWeight, @"[\w\W]*?\ (?=\()").Value;
+					strShippingWeight = strShippingWeight.Trim();
+					project.SendInfoToLog("Shipping Weight Standart: " + strShippingWeight, true);
+					project.SendInfoToLog("Shipping Weight NewData: " + strShippingWeight, true);
+
+				}
+				
+			}
+		}
+		else if(blnProductDetails==true){
+			
+			string strCollectElements = Regex.Match(strGetResultBody, @"(?<=Product\ details)[\w\W]*?(?=Would\ you)").Value;
+			MatchCollection mthRegexParameters = Regex.Matches(strCollectElements, @"<li>[\w\W]*?</li>");
+			foreach(Match mthParameters in mthRegexParameters){
+				strParameters = mthParameters.Value;
+				if(strParameters.Contains("ASIN")){
+					strAsin = Regex.Match(strParameters, @"(?<=</b>)[\w\W]*?(?=</li>)").Value;
+					strAsin = strAsin.Trim();
+					project.SendInfoToLog("Асин Standart: " + strAsinStandart, true);
+					project.SendInfoToLog("Асин NewData: " + strAsin, true);
+				}
+				if(strParameters.Contains("Package Dimensions")){
+					strPackageDimensions = Regex.Match(strParameters, @"(?<=</b>)[\w\W]*?(?=</li>)").Value;
+					strPackageDimensions = strPackageDimensions.Trim();
+					project.SendInfoToLog("Package Dimensions Standart: " + strPackageDimensionsStandart, true);
+					project.SendInfoToLog("Package Dimensions NewData: " + strPackageDimensions, true);
+
+				}
+				
+				if(strParameters.Contains("Product Dimensions")){
+					strProductDimensions = Regex.Match(strParameters, @"(?<=</b>)[\w\W]*?(?=</li>)").Value;
+					strProductDimensions = strProductDimensions.Trim();
+					project.SendInfoToLog("Product Dimensions Standart: " + strProductDimensionsStandart, true);
+					project.SendInfoToLog("Product Dimensions NewData: " + strProductDimensions, true);
+				}
+
+
+				if(strParameters.Contains("Item Weight")){
+					strItemWeight = Regex.Match(strParameters, @"(?<=</b>)[\w\W]*?(?=</li>)").Value;
+					strItemWeight = strItemWeight.Trim();
+					project.SendInfoToLog("Item Weight Standart: " + strItemWeightStandart, true);
+					project.SendInfoToLog("Item Weight NewData: " + strItemWeight, true);
+
+				}
+
+				if(strParameters.Contains("Shipping Weight")){
+					strShippingWeight = Regex.Match(strParameters, @"(?<=</b>)[\w\W]*?(?=</li>)").Value;
+					strShippingWeight = strShippingWeight.Trim();
+					strShippingWeight = Regex.Match(strShippingWeight, @"[\w\W]*?\ (?=\()").Value;
+					strShippingWeight = strShippingWeight.Trim();
+					project.SendInfoToLog("Shipping Weight Standart: " + strShippingWeight, true);
+					project.SendInfoToLog("Shipping Weight NewData: " + strShippingWeight, true);
+
+				}
+			}
+		}
+			if(strProductDimensions==""){
+				strProductDimensions = "x";
+				project.SendInfoToLog("Product Dimensions Standart: " + strProductDimensionsStandart, true);
+				project.SendInfoToLog("Product Dimensions NewData: " + strProductDimensions, true);
+					
+			}
+			
+			if(strPackageDimensions==""){
+				strPackageDimensions = "x";
+				project.SendInfoToLog("Package Dimensions Standart: " + strPackageDimensionsStandart, true);
+				project.SendInfoToLog("Package Dimensions NewData: " + strPackageDimensions, true);
+				
+			}
+
+
+			if(strItemWeight==""){
+				strItemWeight = "x";
+				project.SendInfoToLog("Item Weight Standart: " + strItemWeightStandart, true);
+				project.SendInfoToLog("Item Weight NewData: " + strItemWeight, true);
+				
+			}
+			
+			if(strShippingWeight==""){
+				strShippingWeight = "x";
+				project.SendInfoToLog("Shipping Weight Standart: " + strShippingWeight, true);
+				project.SendInfoToLog("Shipping Weight NewData: " + strShippingWeight, true);
+				
+			}
+
+			int i = 2;
+			int b = tblBroukenListing.RowCount;
+			if(strAsinStandart!=strAsin&&blnCaseSplit==true){
+				strFormat = String.Format("ASIN {0}: Сhanged ASIN.", strAsinStandart);
+				lstChanges.Add(strFormat);
+				blnAsin = true;
+				//записываем номер строки асина в таблице стандарт
+				tblBroukenListing.SetCell(1, b, a.ToString());
+				//записываем в таблицу какой параметр изменился
+				tblBroukenListing.SetCell(i, b, "Asin");
+				i++;
+				project.SendInfoToLog(strFormat, true);
+			}
+			if(blnCaseListing==true){
+				if(strProdNameStandart!=strProdName){
+					strFormat = String.Format("ASIN {0}: Сhanged Title.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnProdName = true;
+					//записываем номер строки асина в таблице стандарт
+					tblBroukenListing.SetCell(1, b, a.ToString());
+					//записываем в таблицу какой параметр изменился
+					tblBroukenListing.SetCell(i, b, "Title");
+					i++;
+					project.SendInfoToLog(strFormat, true);
+				}
+				if(strBrandStandart!=strBrand){
+					strFormat = String.Format("ASIN {0}: Сhanged Brand.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnBrand = true;
+					//записываем номер строки асина в таблице стандарт
+					tblBroukenListing.SetCell(1, b, a.ToString());
+					tblBroukenListing.SetCell(i, b, "Brand");
+					i++;
+					project.SendInfoToLog(strFormat, true);
+				}
+
+				if(strSellersCountStandart!=strSellersCount){
+					strFormat = String.Format("ASIN {0}: Сhanged Sellers Count.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnSellersCount = true;
+					project.SendInfoToLog(strFormat, true);
+					
+				}
+				
+				if(strCustomerReviews==""){
+						strCustomerReviews = "0";
+					}
+
+				int intCustomerReviewsStandart = Convert.ToInt32(strCustomerReviewsStandart);
+				int intCustomerReviews = Convert.ToInt32(strCustomerReviews);
+					
+				if(intCustomerReviewsStandart>intCustomerReviews){
+					strFormat = String.Format("ASIN {0}: Сhanged CustomerReviews.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnCustomerReviews = true;
+					project.SendInfoToLog(strFormat, true);
+				}
+				
+				//string strBalba = strBullet.Replace(Convert.ToString((char)10, Convert.ToString((char)13)+Convert.ToString((char)10)));
+				strBullet = strBullet.Replace(Convert.ToString((char)13), String.Empty);
+				
+				
+				if(strBulletStandart!=strBullet){
+					strFormat = String.Format("ASIN {0}: Сhanged Bullit.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnBullet = true;
+					//записываем номер строки асина в таблице стандарт
+					tblBroukenListing.SetCell(1, b, a.ToString());
+					tblBroukenListing.SetCell(i, b, "Bullet points");
+					i++;
+					project.SendInfoToLog(strFormat, true);
+				}
+				if(strDescriptionStandart!=strDescription){
+					strFormat = String.Format("ASIN {0}: Сhanged Description.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnDescription = true;
+					//записываем номер строки асина в таблице стандарт
+					tblBroukenListing.SetCell(1, b, a.ToString());
+					tblBroukenListing.SetCell(i, b, "Product Description");
+					i++;
+					project.SendInfoToLog(strFormat, true);
+				}
+				if(strCategoryStandart!=strCategory&&strCategoryStandart!=""){
+					strFormat = String.Format("ASIN {0}: Сhanged Category.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnCategory = true;
+					//записываем номер строки асина в таблице стандарт
+					tblBroukenListing.SetCell(1, b, a.ToString());
+					tblBroukenListing.SetCell(i, b, "Category");
+					project.SendInfoToLog(strFormat, true);
+				}
+				else if(strCategoryStandart!=strCategory&&strCategoryStandart==""){
+					strFormat = String.Format("ASIN {0}: Category data added.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnCategory = true;
+					project.SendInfoToLog(strFormat, true);
+				}
+				if(strImgStandart!=strImg){
+					strFormat = String.Format("ASIN {0}: Сhanged Image.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnImg = true;
+					//записываем номер строки асина в таблице стандарт
+					tblBroukenListing.SetCell(1, b, a.ToString());
+					tblBroukenListing.SetCell(i, b, "Images");
+					i++;
+					project.SendInfoToLog(strFormat, true);
+				}
+		//		
+		//		if(strProductDimensionsStandart!=strProductDimensions){
+		//			strFormat = String.Format("ASIN {0}: Сhanged Product Dimensions.", strAsinStandart);
+		//			lstChanges.Add(strFormat);
+		//			blnProductDimensions = true;
+		//			tblBroukenListing.SetCell(i, b, "Item Dimensions");
+		//			i++;
+		//			project.SendInfoToLog(strFormat, true);
+		//		}
+				if(strPackageDimensionsStandart!=strPackageDimensions&&strPackageDimensionsStandart!=""){
+					strFormat = String.Format("ASIN {0}: Сhanged Package Dimensions.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnPackageDimensions = true;
+					//записываем номер строки асина в таблице стандарт
+					tblBroukenListing.SetCell(1, b, a.ToString());
+					tblBroukenListing.SetCell(i, b, "Packaging Dimensions");
+					i++;
+					project.SendInfoToLog(strFormat, true);
+				}
+				else if(strPackageDimensionsStandart!=strPackageDimensions&&strPackageDimensionsStandart==""){
+					strFormat = String.Format("ASIN {0}: Package Dimensions data added.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnPackageDimensions = true;
+					project.SendInfoToLog(strFormat, true);
+				}
+
+		//		if(strItemWeightStandart!=strItemWeight){
+		//			strFormat = String.Format("ASIN {0}: Сhanged Item Weight.", strAsinStandart);
+		//			lstChanges.Add(strFormat);
+		//			blnItemWeight = true;
+		//			tblBroukenListing.SetCell(i, b, "Item Weight");
+		//			i++;
+		//			project.SendInfoToLog(strFormat, true);
+		//		}
+				if(strShippingWeightStandart!=strShippingWeight&&strShippingWeightStandart!=""){
+					strFormat = String.Format("ASIN {0}: Сhanged Shipping Weight.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnShippingWeight = true;
+					//записываем номер строки асина в таблице стандарт
+					tblBroukenListing.SetCell(1, b, a.ToString());
+					tblBroukenListing.SetCell(i, b, "Packaging Weight");
+					i++;
+					project.SendInfoToLog("Shipping Weight Standart: " + strShippingWeight, true);
+					project.SendInfoToLog("Shipping Weight NewData: " + strShippingWeight, true);
+				
+					project.SendInfoToLog(strFormat, true);
+				}
+				else if(strShippingWeightStandart!=strShippingWeight&&strShippingWeightStandart==""){
+					strFormat = String.Format("ASIN {0}: Shipping Weight data added.", strAsinStandart);
+					lstChanges.Add(strFormat);
+					blnShippingWeight = true;
+					project.SendInfoToLog(strFormat, true);
+				}
+			}
+
+		//загрузить профиль
+	//	project.Profile.Load(project.Directory + @"\Вспомогательные файлы\tdfxy1uq@mail.ru.zpprofile"); //загружаем профиль из файла D:\profile.zpprofile
+
+		//	//UserAgent - заголовок "userAgent" браузера профиля (http://www.w3schools.com/jsref/prop_nav_useragent.asp)
+		//	project.Profile.UserAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 YaBrowser/17.9.0.2081 Yowser/2.5 Safari/537.36";
+		//
+		//	//установить прокси
+		//	instance.SetProxy(strProxyEmail, false);
+			
+			//если хоть один из параметров изменен, то отправляем уведомление
+			if(blnAsin==true||blnBrand==true||blnCustomerReviews==true||blnSellersCount==true||blnCategory==true||blnProdName==true||blnBullet==true||blnDescription==true||blnImg==true||blnPackageDimensions==true||blnProductDimensions==true||blnItemWeight==true||blnShippingWeight==true){
+				//переменная для запуска bat файла
+				blnAppealForHelp = true;
+			    //если такой асин уже есть в таблице берем другой асин
+				bool blnTemp = false;
+				if(tblBroukenListing.RowCount!=0){
+					for(int z=0; z<tblBroukenListing.RowCount; z+=2){
+						string strTemp = tblBroukenListing.GetCell(0, z);
+						if(strTemp==strAsinStandart){
+							project.SendInfoToLog("Асин уже есть в таблице. " + strAsinStandart, true);
+							blnTemp = true;
+							tblBroukenListing.DeleteRow(b);
+							if(blnTemp) break;
+						}
+					}
+					if(blnTemp) continue;
+				}
+				
+				//добавлям АСИН в таблицу с уже измененными параметрами
+				tblBroukenListing.SetCell(0, b, strAsinStandart);
+				
+				//добавляем дату измениния
+				tblBroukenListing.SetCell(i, b, DateTime.Now.ToString());
+				
+				//добавляем данные из таблицы с эталонами в таблицу с поломаными листингами
+				tblBroukenListing.AddRow(tblStandart.GetRow(a));
+				
+				//добавляем дату в список с изменениями
+				lstChanges.Insert(0, DateTime.Now.ToString());
+				
+				//объединение элементов списка в одну строку
+				strListToStringDelimiter = Environment.NewLine;
+				strMessage = String.Join(strListToStringDelimiter, lstChanges);
+				project.SendInfoToLog(strMessage);
+				
+				project.SendInfoToLog("Обнаружены изменения. Отправляем уведомление в телеграм.", true);
+			
+				//отправка сообщения в телеграм всем пользователям в списке
+				Telegram.Notification(strMessage);
+	//			Thread.Sleep(30000);
+			}
+			else{
+				strFormat = String.Format("ASIN {0}: Изменений не обнаружено.", strAsinStandart);
+				project.SendInfoToLog(strFormat, true);
+	//			Thread.Sleep(30000);
+			}
+			
+//		}
+		
+	}
+}
+//if(blnAppealForHelp){
+////	ProcessStartInfo startInfo = new ProcessStartInfo();
+////	startInfo.FileName = project.Directory + @"\Вспомогательные файлы\Запуск Appeal_for_help.bat";
+////
+////	Process myProcess = Process.Start(startInfo);
+//
+//	project.SendInfoToLog("Appeal_for_help запущен.", true);	
+//}
+
+//устанавливаетм метку для других шаблонов что можно работать
+tblUsers.SetCell(2, 0, "Can work");
+
+project.SendInfoToLog("Выполнение завершено!", true);
+
+//Open Case: Action Needed ByYou
+//Needs Your Attention
+
